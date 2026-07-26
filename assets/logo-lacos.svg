@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">AnimesTogether — Laços Cruzados</title>
+  <desc id="desc">Dois laços roxos e brancos se cruzando em forma de X.</desc>
+  <rect width="160" height="160" rx="34" fill="#100C18"/>
+  <path d="M34 40C64 52 96 92 126 122" fill="none" stroke="#9B6CFF" stroke-width="22" stroke-linecap="round"/>
+  <path d="M126 40C96 52 64 92 34 122" fill="none" stroke="#F7F4FF" stroke-width="22" stroke-linecap="round"/>
+  <path d="M34 40C64 52 96 92 126 122" fill="none" stroke="#D6C3FF" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+  <path d="M126 40C96 52 64 92 34 122" fill="none" stroke="#6D3BEF" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  <circle cx="80" cy="81" r="12" fill="#100C18" stroke="#F7F4FF" stroke-width="4"/>
+</svg>

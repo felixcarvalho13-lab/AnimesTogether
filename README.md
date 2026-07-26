@@ -1,34 +1,42 @@
-# AnimesTogether — Sprint 3
+# AnimesTogether — Sprint 4: Identity
 
-Atualização focada em identidade visual e experiência de aplicativo.
+A identidade visual oficial do projeto foi aplicada.
 
-## Novidades
+## Marca principal
 
-- Nova marca com monograma **AT**
-- Remoção das antigas bandeirinhas
-- Home visual com hero principal
-- Frases rotativas
-- Painel rápido com assistindo, favoritos e concluídos
-- Vitrine de favoritos
-- Área “Continue assistindo” redesenhada
-- Capas visuais provisórias geradas pelas iniciais
-- Navegação e layout mobile refinados
-- Animações e acabamento visual
+**Sol Nascente** em roxo, branco e preto.
+
+Ele representa:
+- um novo episódio;
+- um novo dia;
+- liberdade e aventura;
+- a história pessoal por trás de “Meu Sol”.
+
+## Símbolo complementar
+
+**Laços Cruzados** em roxo, branco e preto.
+
+Ele representa:
+- duas pessoas;
+- conexão;
+- assistir juntos;
+- uma lista compartilhada.
+
+## Arquivos adicionados
+
+- `assets/logo-sol.svg`
+- `assets/logo-lacos.svg`
+- `assets/favicon.svg`
 
 ## Como atualizar
 
-1. Extraia o arquivo ZIP.
-2. Substitua no repositório:
-   - `index.html`
-   - `style.css`
-   - `script.js`
-   - `README.md`
-3. Abra `index.html` e teste.
-4. No GitHub Desktop:
-   - Summary: `Sprint 3 - identidade visual e home`
+1. Extraia o ZIP.
+2. Copie todos os arquivos e a pasta `assets` para o repositório.
+3. Substitua os arquivos existentes.
+4. Teste abrindo `index.html`.
+5. No GitHub Desktop:
+   - Summary: `Sprint 4 - identidade visual oficial`
    - Commit to main
    - Push origin
 
-## Próxima etapa
-
-A Sprint 4 poderá integrar a API do AniList para buscar capas, banners, episódios, gêneros e sinopses reais.
+O GitHub Pages atualizará o mesmo link automaticamente.

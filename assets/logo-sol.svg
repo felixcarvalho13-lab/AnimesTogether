@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">AnimesTogether — Sol Nascente</title>
+  <desc id="desc">Um sol roxo nascendo sobre duas linhas brancas.</desc>
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B794FF"/>
+      <stop offset="1" stop-color="#6D3BEF"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="160" height="160" rx="34" fill="#100C18"/>
+  <circle cx="80" cy="72" r="34" fill="url(#sun)" filter="url(#glow)"/>
+  <path d="M30 92H130" stroke="#F7F4FF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M42 111H118" stroke="#9B6CFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M56 128H104" stroke="#F7F4FF" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+</svg>

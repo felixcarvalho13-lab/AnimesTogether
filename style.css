@@ -1381,3 +1381,143 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* =========================
+   Sprint 4 — identidade oficial
+   ========================= */
+
+:root {
+  --accent: #9B6CFF;
+  --accent-soft: #6D3BEF;
+  --bg-page: #100C18;
+  --surface-1: #181221;
+  --surface-2: #21192D;
+  --border: #3B2C4E;
+  --border-strong: #2B2138;
+  --text-primary: #F7F4FF;
+  --text-secondary: #A99DB8;
+  --text-muted: #756985;
+  --gold: #B794FF;
+}
+
+[data-theme="light"] {
+  --bg-page: #F7F4FF;
+  --surface-1: #FFFFFF;
+  --surface-2: #EEE7F8;
+  --border: #D9CBEB;
+  --border-strong: #E8DFF3;
+  --text-primary: #191321;
+  --text-secondary: #6D617A;
+  --text-muted: #968CA0;
+  --accent: #7A45EE;
+  --accent-soft: #5F2FD1;
+  --gold: #7A45EE;
+}
+
+.brand-mark {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 15px;
+  object-fit: cover;
+  transform: none;
+  box-shadow:
+    0 10px 30px color-mix(in srgb, var(--accent) 32%, transparent),
+    inset 0 1px rgba(255,255,255,.28);
+}
+
+.hero-monogram {
+  width: 168px;
+  height: 168px;
+  border-radius: 42px;
+  object-fit: cover;
+  transform: rotate(5deg);
+  box-shadow:
+    0 35px 80px color-mix(in srgb, var(--accent) 40%, transparent),
+    inset 0 1px rgba(255,255,255,.35);
+}
+
+.dashboard-symbol {
+  grid-row: 1 / 3;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  object-fit: cover;
+}
+
+.shared-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 26px 0 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--surface-1) 94%, var(--accent) 6%),
+      var(--surface-2));
+}
+
+.shared-identity img {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+}
+
+.shared-identity strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.hero-panel {
+  background:
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-1) 94%, var(--accent) 6%), var(--surface-2));
+}
+
+.eyebrow {
+  color: #C8B0FF;
+}
+
+.bar-fill {
+  background: linear-gradient(90deg, #6D3BEF, #B794FF);
+}
+
+.check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.stamp {
+  border-color: #C8B0FF;
+  color: #C8B0FF;
+}
+
+.favorite-btn.on {
+  color: #C8B0FF;
+  text-shadow: 0 0 18px color-mix(in srgb, #C8B0FF 60%, transparent);
+}
+
+@media (max-width: 700px) {
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+    border-radius: 13px;
+  }
+
+  .dashboard-symbol {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 4px;
+  }
+
+  .shared-identity {
+    margin-top: 22px;
+  }
+}
