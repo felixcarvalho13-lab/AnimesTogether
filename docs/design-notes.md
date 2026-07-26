@@ -84,6 +84,26 @@
 
 
 
+**## Dashboard V2**
+
+
+
+**- Cards menores**
+
+**- Total de animes**
+
+**- Assistindo**
+
+**- Concluídos**
+
+**- Favoritos**
+
+**- Ícones**
+
+**- Animação ao carregar**
+
+
+
 **## Paleta Oficial**
 
 
@@ -101,6 +121,96 @@
 **- Secondary: #A1A1AA**
 
 **- Accent: #FFB703**
+
+
+
+**## Tipografia**
+
+
+
+**### Poppins**
+
+
+
+**- Logo**
+
+**- Títulos**
+
+**- Botões**
+
+
+
+**### Inter**
+
+
+
+**- Textos**
+
+**- Descrições**
+
+**- Informações**
+
+
+
+**## Espaçamentos**
+
+
+
+**- 4**
+
+**- 8**
+
+**- 12**
+
+**- 16**
+
+**- 24**
+
+**- 32**
+
+**- 48**
+
+**- 64**
+
+
+
+**## Animações**
+
+
+
+**- 0.20s**
+
+**- 0.25s**
+
+**- 0.30s**
+
+
+
+**## Responsividade**
+
+
+
+**### Desktop**
+
+
+
+**- 4 a 5 cards**
+
+
+
+**### Tablet**
+
+
+
+**- 3 cards**
+
+
+
+**### Mobile**
+
+
+
+**- 2 cards**
 
 
 
@@ -129,6 +239,8 @@
 **- Favorito**
 
 **- Continue Assistindo**
+
+**- Dashboard**
 
 
 
