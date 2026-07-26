@@ -9,8 +9,9 @@
 
 </head>
 <body>
-<div class="wrap">
-  <div class="header-row">
+<div class="app-shell">
+  <header class="app-header">
+    <div class="wrap header-row">
     <div>
       <h1>🎌 AnimesTogether</h1>
       <p class="sub">Compartilhe. Acompanhe. Assista juntos.</p>
@@ -19,8 +20,20 @@
       <button class="theme-btn" id="themeBtn" aria-label="Trocar tema">☾</button>
       <button class="share-btn" id="shareBtn">Copiar link</button>
     </div>
-  </div>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
   <div class="toast" id="toast"></div>
+
+  <section class="welcome-card" id="continueCard" hidden>
+    <div>
+      <span class="eyebrow">Continue assistindo</span>
+      <h2 id="continueName">Seu próximo anime</h2>
+      <p id="continueInfo">Escolha algo da lista para continuar.</p>
+    </div>
+    <button class="primary continue-btn" id="continueBtn">+1 episódio</button>
+  </section>
 
   <div class="name-section" id="nameSection"></div>
 
@@ -34,8 +47,21 @@
     <input type="text" id="newNote" placeholder="Nota (opcional): ex: assistir dublado" style="flex:1;" />
   </div>
 
-  <div class="add-row">
-    <input type="text" id="searchBox" placeholder="Buscar na lista..." />
+  <div class="tools-grid">
+    <div class="search-wrap">
+      <span aria-hidden="true">⌕</span>
+      <input type="text" id="searchBox" placeholder="Buscar por nome, nota ou pessoa..." />
+    </div>
+
+    <select id="sortSelect" class="sort-select" aria-label="Ordenar lista">
+      <option value="priority">Prioridade manual</option>
+      <option value="name">Nome (A–Z)</option>
+      <option value="progress">Maior progresso</option>
+      <option value="recent">Mais recentes</option>
+      <option value="favorites">Favoritos primeiro</option>
+    </select>
+
+    <button class="share-btn random-btn" id="randomBtn">🎲 Sortear</button>
     <button class="share-btn" id="exportBtn">Exportar</button>
   </div>
 
@@ -46,11 +72,32 @@
     <button data-filter="pending">Para assistir</button>
     <button data-filter="watching">Assistindo</button>
     <button data-filter="watched">Já assistidos</button>
+    <button data-filter="favorites">⭐ Favoritos</button>
   </div>
   <p class="hint">Em "Para assistir", arraste os cards pelo ⠿ para reordenar por prioridade.</p>
 
   <div id="list"></div>
   <p class="status" id="status">Carregando lista...</p>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Navegação rápida">
+    <button data-jump="top"><span>⌂</span>Início</button>
+    <button data-jump="list"><span>☷</span>Lista</button>
+    <button id="bottomRandom"><span>🎲</span>Sortear</button>
+    <button data-jump="profile"><span>☺</span>Perfil</button>
+  </nav>
+</div>
+
+<div class="modal-backdrop" id="deleteModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <span class="modal-icon">🗑️</span>
+    <h2 id="deleteTitle">Excluir anime?</h2>
+    <p id="deleteText">Esta ação não poderá ser desfeita.</p>
+    <div class="modal-actions">
+      <button class="share-btn" id="cancelDeleteBtn">Cancelar</button>
+      <button class="danger-btn" id="confirmDeleteBtn">Excluir</button>
+    </div>
+  </div>
 </div>
 
 <script src="script.js" defer></script>

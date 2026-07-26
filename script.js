@@ -26,6 +26,8 @@ const STORAGE_KEY = 'anime-list-items';
 let items = [];
 let filter = 'all';
 let searchTerm = '';
+let sortMode = 'priority';
+let pendingDeleteId = null;
 let draggedId = null;
 let myName = '';
 const NAME_KEY = 'my-name';
@@ -297,6 +299,8 @@ async function loadItems() {
       if (typeof i.suggestedBy !== 'string') i.suggestedBy = '';
       if (typeof i.watchedAt !== 'number') i.watchedAt = null;
       if (typeof i.note !== 'string') i.note = '';
+      if (typeof i.favorite !== 'boolean') i.favorite = false;
+      if (typeof i.addedAt !== 'number') i.addedAt = Date.now();
     });
   } catch (e) {
     items = [];
@@ -320,12 +324,18 @@ function renderStats() {
 
   const watchedCount = items.filter(i => getStatus(i) === 'watched').length;
   const watchingCount = items.filter(i => getStatus(i) === 'watching').length;
+  const pendingCount = items.filter(i => getStatus(i) === 'pending').length;
+  const favoriteCount = items.filter(i => i.favorite).length;
   const episodesWatched = items.reduce((sum, i) => sum + (i.currentEp || 0), 0);
+  const estimatedHours = Math.round((episodesWatched * 24) / 60);
 
   const stats = [
+    { num: items.length, label: 'Na lista' },
     { num: watchedCount, label: 'Assistidos' },
     { num: watchingCount, label: 'Assistindo' },
-    { num: episodesWatched, label: 'Eps. no total' },
+    { num: pendingCount, label: 'Na fila' },
+    { num: favoriteCount, label: 'Favoritos' },
+    { num: estimatedHours + 'h', label: 'Tempo estimado' },
   ];
 
   stats.forEach(s => {
@@ -343,16 +353,66 @@ function renderStats() {
   });
 }
 
+function renderContinueCard() {
+  const card = document.getElementById('continueCard');
+  const watching = items
+    .filter(i => getStatus(i) === 'watching')
+    .sort((a, b) => (b.currentEp || 0) - (a.currentEp || 0))[0];
+
+  if (!watching) {
+    card.hidden = true;
+    card.dataset.id = '';
+    return;
+  }
+
+  card.hidden = false;
+  card.dataset.id = watching.id;
+  document.getElementById('continueName').textContent = watching.name;
+  document.getElementById('continueInfo').textContent = watching.totalEps
+    ? `Você está no episódio ${watching.currentEp} de ${watching.totalEps}.`
+    : `Você está no episódio ${watching.currentEp}.`;
+}
+
+function getSortedItems(list) {
+  const result = [...list];
+
+  if (sortMode === 'name') {
+    result.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  } else if (sortMode === 'progress') {
+    result.sort((a, b) => {
+      const pa = a.totalEps ? a.currentEp / a.totalEps : a.currentEp || 0;
+      const pb = b.totalEps ? b.currentEp / b.totalEps : b.currentEp || 0;
+      return pb - pa;
+    });
+  } else if (sortMode === 'recent') {
+    result.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+  } else if (sortMode === 'favorites') {
+    result.sort((a, b) => Number(b.favorite) - Number(a.favorite));
+  }
+
+  return result;
+}
+
 function render() {
   renderStats();
+  renderContinueCard();
   const list = document.getElementById('list');
   list.innerHTML = '';
   let visible = items;
-  if (filter !== 'all') visible = visible.filter(i => getStatus(i) === filter);
+  if (filter === 'favorites') {
+    visible = visible.filter(i => i.favorite);
+  } else if (filter !== 'all') {
+    visible = visible.filter(i => getStatus(i) === filter);
+  }
   if (searchTerm) {
     const q = searchTerm.toLowerCase();
-    visible = visible.filter(i => i.name.toLowerCase().includes(q));
+    visible = visible.filter(i =>
+      i.name.toLowerCase().includes(q) ||
+      (i.note || '').toLowerCase().includes(q) ||
+      (i.suggestedBy || '').toLowerCase().includes(q)
+    );
   }
+  visible = getSortedItems(visible);
 
   if (visible.length === 0) {
     const p = document.createElement('p');
@@ -449,16 +509,28 @@ function render() {
     stamp.className = 'stamp';
     stamp.textContent = 'VISTO';
 
+    const actions = document.createElement('div');
+    actions.className = 'item-actions';
+
+    const favorite = document.createElement('button');
+    favorite.className = 'favorite-btn' + (item.favorite ? ' on' : '');
+    favorite.textContent = item.favorite ? '★' : '☆';
+    favorite.setAttribute('aria-label', item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+    favorite.title = item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+    favorite.onclick = () => toggleFavorite(item.id);
+
     const del = document.createElement('button');
     del.className = 'del';
     del.textContent = '✕';
     del.setAttribute('aria-label', 'Remover');
-    del.onclick = () => handleDeleteClick(item.id, del);
+    del.onclick = () => handleDeleteClick(item.id);
 
     top.appendChild(handle);
     top.appendChild(check);
     top.appendChild(nameWrap);
-    top.appendChild(del);
+    actions.appendChild(favorite);
+    actions.appendChild(del);
+    top.appendChild(actions);
     row.appendChild(top);
     row.appendChild(stamp);
 
@@ -542,7 +614,7 @@ async function addItem() {
   const totalRaw = totalInput.value.trim();
   const totalEps = totalRaw ? Math.max(0, parseInt(totalRaw, 10)) : null;
   const note = noteInput.value.trim();
-  items.push({ id: uid(), name: value, totalEps, currentEp: 0, watched: false, watchedAt: null, suggestedBy: myName, note, addedAt: Date.now() });
+  items.push({ id: uid(), name: value, totalEps, currentEp: 0, watched: false, watchedAt: null, suggestedBy: myName, note, favorite: false, addedAt: Date.now() });
   input.value = '';
   totalInput.value = '';
   noteInput.value = '';
@@ -610,25 +682,61 @@ function flashStamp(id) {
   });
 }
 
-let pendingDeleteId = null;
 let pendingDeleteTimeout = null;
 
-function handleDeleteClick(id, btnEl) {
-  if (pendingDeleteId === id) {
-    clearTimeout(pendingDeleteTimeout);
-    pendingDeleteId = null;
-    removeItem(id);
+function handleDeleteClick(id) {
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteText').textContent = `Deseja excluir "${target.name}" da lista?`;
+  document.getElementById('deleteModal').hidden = false;
+}
+
+function closeDeleteModal() {
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').hidden = true;
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeDeleteModal();
+  await removeItem(id);
+  showToast('Anime removido');
+}
+
+async function toggleFavorite(id) {
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+  target.favorite = !target.favorite;
+  render();
+  await saveItems();
+  showToast(target.favorite ? 'Adicionado aos favoritos ⭐' : 'Removido dos favoritos');
+}
+
+function chooseRandomAnime() {
+  const candidates = items.filter(i => getStatus(i) !== 'watched');
+  if (!candidates.length) {
+    showToast(items.length ? 'Todos os animes já foram assistidos!' : 'Adicione algum anime primeiro.');
     return;
   }
-  pendingDeleteId = id;
-  clearTimeout(pendingDeleteTimeout);
-  btnEl.classList.add('confirm');
-  btnEl.textContent = 'Excluir?';
-  pendingDeleteTimeout = setTimeout(() => {
-    pendingDeleteId = null;
-    btnEl.classList.remove('confirm');
-    btnEl.textContent = '✕';
-  }, 3000);
+
+  filter = 'all';
+  document.querySelectorAll('.filters button').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === 'all');
+  });
+
+  const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  render();
+
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`.item[data-id="${chosen.id}"]`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('random-highlight');
+    setTimeout(() => row.classList.remove('random-highlight'), 1300);
+    showToast(`🎲 Que tal assistir: ${chosen.name}?`);
+  });
 }
 
 async function removeItem(id) {
@@ -747,6 +855,39 @@ document.getElementById('newName').addEventListener('keydown', e => {
 document.getElementById('newTotal').addEventListener('keydown', e => {
   if (e.key === 'Enter') addItem();
 });
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortMode = e.target.value;
+  render();
+});
+
+document.getElementById('randomBtn').onclick = chooseRandomAnime;
+document.getElementById('bottomRandom').onclick = chooseRandomAnime;
+
+document.getElementById('continueBtn').onclick = () => {
+  const id = document.getElementById('continueCard').dataset.id;
+  const target = items.find(i => i.id === id);
+  if (target) setEpisode(id, target.currentEp + 1);
+};
+
+document.getElementById('cancelDeleteBtn').onclick = closeDeleteModal;
+document.getElementById('confirmDeleteBtn').onclick = confirmDelete;
+document.getElementById('deleteModal').addEventListener('click', e => {
+  if (e.target.id === 'deleteModal') closeDeleteModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeDeleteModal();
+});
+
+document.querySelectorAll('[data-jump]').forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.jump;
+    if (target === 'top') window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (target === 'list') document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
+    if (target === 'profile') document.getElementById('nameSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+});
+
 document.querySelectorAll('.filters button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));

@@ -1,27 +1,34 @@
-# 🎌 AnimesTogether
+# 🎌 AnimesTogether — Sprint 2
 
-Uma lista de animes para acompanhar sugestões, episódios e progresso.
+Aplicativo web para organizar uma lista de animes e acompanhar o progresso.
 
-## Arquivos
+## Novidades desta versão
 
-- `index.html` — estrutura da página
-- `style.css` — aparência e responsividade
-- `script.js` — funcionalidades e armazenamento
+- Visual mais próximo de aplicativo
+- Barra inferior de navegação no celular
+- Área “Continue assistindo”
+- Favoritos com estrela
+- Filtro de favoritos
+- Sorteio de anime
+- Ordenação por nome, progresso, data e favoritos
+- Pesquisa por nome, nota ou pessoa
+- Estatísticas ampliadas
+- Modal de confirmação para exclusão
+- Melhorias de responsividade
 
-## Como abrir no computador
+## Como atualizar
 
-Dê dois cliques em `index.html`.
+Substitua no repositório os arquivos:
 
-## Como publicar no GitHub Pages
+- `index.html`
+- `style.css`
+- `script.js`
+- `README.md`
 
-1. Envie estes arquivos para a branch `main`.
-2. No repositório, abra **Settings → Pages**.
-3. Em **Source**, escolha **Deploy from a branch**.
-4. Selecione a branch `main` e a pasta `/root`.
-5. Clique em **Save**.
+Depois faça Commit e Push pelo GitHub Desktop.
 
-## Importante sobre esta versão
+## Armazenamento
 
-Nesta Sprint 1, os dados são guardados com `localStorage`. Isso significa que ficam salvos apenas no navegador e no aparelho em que a página foi usada.
+Os dados continuam salvos somente no navegador através de `localStorage`.
 
-A sincronização entre duas pessoas será adicionada em uma etapa futura usando um banco de dados online.
+A sincronização compartilhada entre duas pessoas será implementada posteriormente com Firebase.
