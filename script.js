@@ -365,12 +365,112 @@ function renderContinueCard() {
     return;
   }
 
+  const pct = watching.totalEps
+    ? Math.min(100, Math.round((watching.currentEp / watching.totalEps) * 100))
+    : 0;
+
   card.hidden = false;
   card.dataset.id = watching.id;
   document.getElementById('continueName').textContent = watching.name;
   document.getElementById('continueInfo').textContent = watching.totalEps
     ? `Você está no episódio ${watching.currentEp} de ${watching.totalEps}.`
     : `Você está no episódio ${watching.currentEp}.`;
+  document.getElementById('continueProgress').style.width = pct + '%';
+  document.getElementById('continuePct').textContent = pct + '%';
+  document.getElementById('continueCover').textContent = getInitials(watching.name);
+  document.getElementById('continueCover').style.background =
+    `linear-gradient(145deg, ${nameColor(watching.name)}, color-mix(in srgb, ${nameColor(watching.name)} 58%, #16121f 42%))`;
+}
+
+
+function renderDashboard() {
+  const watching = items.filter(i => getStatus(i) === 'watching').length;
+  const favorites = items.filter(i => i.favorite).length;
+  const completed = items.filter(i => getStatus(i) === 'watched').length;
+
+  document.getElementById('dashWatching').textContent = watching;
+  document.getElementById('dashFavorites').textContent = favorites;
+  document.getElementById('dashCompleted').textContent = completed;
+
+  renderFavoriteShowcase();
+}
+
+function posterGradient(name) {
+  const base = nameColor(name);
+  return {
+    a: base,
+    b: `color-mix(in srgb, ${base} 55%, #16121f 45%)`
+  };
+}
+
+function renderFavoriteShowcase() {
+  const section = document.getElementById('favoritesShowcase');
+  const row = document.getElementById('favoritePosters');
+  const favorites = items.filter(i => i.favorite).slice(0, 4);
+
+  row.innerHTML = '';
+  section.hidden = favorites.length === 0;
+
+  favorites.forEach(item => {
+    const card = document.createElement('article');
+    card.className = 'poster-card';
+    card.dataset.id = item.id;
+
+    const art = document.createElement('div');
+    art.className = 'poster-art';
+    const gradient = posterGradient(item.name);
+    art.style.setProperty('--poster-a', gradient.a);
+    art.style.setProperty('--poster-b', gradient.b);
+    art.textContent = getInitials(item.name);
+
+    const star = document.createElement('span');
+    star.className = 'poster-star';
+    star.textContent = '★';
+    art.appendChild(star);
+
+    const name = document.createElement('span');
+    name.className = 'poster-name';
+    name.textContent = item.name;
+
+    card.appendChild(art);
+    card.appendChild(name);
+    card.onclick = () => focusAnimeCard(item.id);
+    row.appendChild(card);
+  });
+}
+
+function focusAnimeCard(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  filter = 'all';
+  searchTerm = '';
+  document.getElementById('searchBox').value = '';
+  document.querySelectorAll('.filters button').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === 'all');
+  });
+
+  render();
+
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`.item[data-id="${id}"]`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('random-highlight');
+    setTimeout(() => row.classList.remove('random-highlight'), 1300);
+  });
+}
+
+function rotateHeroQuote() {
+  const quotes = [
+    'Cada episódio é uma nova história compartilhada.',
+    'Toda grande maratona começa com um primeiro episódio.',
+    'Boas histórias ficam ainda melhores quando são divididas.',
+    'Sua próxima aventura pode estar a um clique de distância.',
+    'Alguns mundos cabem em vinte e quatro minutos.'
+  ];
+  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+  document.getElementById('heroQuote').textContent = quote;
 }
 
 function getSortedItems(list) {
@@ -396,6 +496,7 @@ function getSortedItems(list) {
 function render() {
   renderStats();
   renderContinueCard();
+  renderDashboard();
   const list = document.getElementById('list');
   list.innerHTML = '';
   let visible = items;
@@ -856,6 +957,23 @@ document.getElementById('newTotal').addEventListener('keydown', e => {
   if (e.key === 'Enter') addItem();
 });
 
+
+document.getElementById('heroAddBtn').onclick = () => {
+  document.getElementById('newName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => document.getElementById('newName').focus(), 450);
+};
+
+document.getElementById('heroRandomBtn').onclick = chooseRandomAnime;
+
+document.getElementById('showAllFavoritesBtn').onclick = () => {
+  filter = 'favorites';
+  document.querySelectorAll('.filters button').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === 'favorites');
+  });
+  render();
+  document.getElementById('list').scrollIntoView({ behavior: 'smooth' });
+};
+
 document.getElementById('sortSelect').addEventListener('change', e => {
   sortMode = e.target.value;
   render();
@@ -897,6 +1015,7 @@ document.querySelectorAll('.filters button').forEach(btn => {
   };
 });
 
+rotateHeroQuote();
 loadTheme();
 loadMyName();
 loadItems();

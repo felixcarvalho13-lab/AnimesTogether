@@ -13,7 +13,15 @@
   <header class="app-header">
     <div class="wrap header-row">
     <div>
-      <h1>🎌 AnimesTogether</h1>
+      
+<div class="brand-lockup" aria-label="AnimesTogether">
+  <div class="brand-mark" aria-hidden="true">AT</div>
+  <div>
+    <h1>AnimesTogether</h1>
+    
+  </div>
+</div>
+
       <p class="sub">Compartilhe. Acompanhe. Assista juntos.</p>
     </div>
     <div class="header-actions">
@@ -26,16 +34,93 @@
   <main class="wrap app-main">
   <div class="toast" id="toast"></div>
 
-  <section class="welcome-card" id="continueCard" hidden>
-    <div>
-      <span class="eyebrow">Continue assistindo</span>
-      <h2 id="continueName">Seu próximo anime</h2>
-      <p id="continueInfo">Escolha algo da lista para continuar.</p>
+  <section class="continue-section" id="continueCard" hidden>
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">Retome de onde parou</span>
+        <h2>Continue assistindo</h2>
+      </div>
     </div>
-    <button class="primary continue-btn" id="continueBtn">+1 episódio</button>
+    <div class="continue-feature">
+      <div class="continue-cover" id="continueCover" aria-hidden="true">AT</div>
+      <div class="continue-content">
+        <h3 id="continueName">Seu próximo anime</h3>
+        <p id="continueInfo">Escolha algo da lista para continuar.</p>
+        <div class="continue-progress">
+          <div class="bar-track"><div class="bar-fill" id="continueProgress"></div></div>
+          <span id="continuePct">0%</span>
+        </div>
+        <button class="primary continue-btn" id="continueBtn">▶ Avançar episódio</button>
+      </div>
+    </div>
   </section>
 
-  <div class="name-section" id="nameSection"></div>
+  
+<section class="app-home" id="homeSection">
+  <div class="hero-panel">
+    <div class="hero-glow hero-glow-one"></div>
+    <div class="hero-glow hero-glow-two"></div>
+    <div class="hero-copy">
+      <span class="eyebrow">Sua jornada em anime</span>
+      <h2>Histórias para assistir, lembrar e compartilhar.</h2>
+      <p id="heroQuote">Cada episódio é uma nova história compartilhada.</p>
+      <div class="hero-actions">
+        <button class="primary" id="heroAddBtn">＋ Adicionar anime</button>
+        <button class="share-btn" id="heroRandomBtn">🎲 Me surpreenda</button>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="orbit orbit-one"></div>
+      <div class="orbit orbit-two"></div>
+      <div class="hero-monogram">AT</div>
+    </div>
+  </div>
+
+  <div class="section-heading compact">
+    <div>
+      <span class="eyebrow">Visão geral</span>
+      <h2>Sua central</h2>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <article class="dashboard-card">
+      <span class="dashboard-icon">▶</span>
+      <strong id="dashWatching">0</strong>
+      <span>assistindo</span>
+    </article>
+    <article class="dashboard-card">
+      <span class="dashboard-icon">★</span>
+      <strong id="dashFavorites">0</strong>
+      <span>favoritos</span>
+    </article>
+    <article class="dashboard-card">
+      <span class="dashboard-icon">✓</span>
+      <strong id="dashCompleted">0</strong>
+      <span>concluídos</span>
+    </article>
+  </div>
+
+  <section class="favorites-showcase" id="favoritesShowcase" hidden>
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">Escolhas especiais</span>
+        <h2>Favoritos</h2>
+      </div>
+      <button class="text-button" id="showAllFavoritesBtn">Ver todos</button>
+    </div>
+    <div class="poster-row" id="favoritePosters"></div>
+  </section>
+</section>
+
+<div class="section-heading list-title">
+  <div>
+    <span class="eyebrow">Biblioteca</span>
+    <h2>Minha lista</h2>
+  </div>
+</div>
+
+<div class="name-section" id="nameSection"></div>
 
   <div class="add-row">
     <input type="text" id="newName" placeholder="Nome do anime" maxlength="120" />

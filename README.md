@@ -1,34 +1,34 @@
-# 🎌 AnimesTogether — Sprint 2
+# AnimesTogether — Sprint 3
 
-Aplicativo web para organizar uma lista de animes e acompanhar o progresso.
+Atualização focada em identidade visual e experiência de aplicativo.
 
-## Novidades desta versão
+## Novidades
 
-- Visual mais próximo de aplicativo
-- Barra inferior de navegação no celular
-- Área “Continue assistindo”
-- Favoritos com estrela
-- Filtro de favoritos
-- Sorteio de anime
-- Ordenação por nome, progresso, data e favoritos
-- Pesquisa por nome, nota ou pessoa
-- Estatísticas ampliadas
-- Modal de confirmação para exclusão
-- Melhorias de responsividade
+- Nova marca com monograma **AT**
+- Remoção das antigas bandeirinhas
+- Home visual com hero principal
+- Frases rotativas
+- Painel rápido com assistindo, favoritos e concluídos
+- Vitrine de favoritos
+- Área “Continue assistindo” redesenhada
+- Capas visuais provisórias geradas pelas iniciais
+- Navegação e layout mobile refinados
+- Animações e acabamento visual
 
 ## Como atualizar
 
-Substitua no repositório os arquivos:
+1. Extraia o arquivo ZIP.
+2. Substitua no repositório:
+   - `index.html`
+   - `style.css`
+   - `script.js`
+   - `README.md`
+3. Abra `index.html` e teste.
+4. No GitHub Desktop:
+   - Summary: `Sprint 3 - identidade visual e home`
+   - Commit to main
+   - Push origin
 
-- `index.html`
-- `style.css`
-- `script.js`
-- `README.md`
+## Próxima etapa
 
-Depois faça Commit e Push pelo GitHub Desktop.
-
-## Armazenamento
-
-Os dados continuam salvos somente no navegador através de `localStorage`.
-
-A sincronização compartilhada entre duas pessoas será implementada posteriormente com Firebase.
+A Sprint 4 poderá integrar a API do AniList para buscar capas, banners, episódios, gêneros e sinopses reais.
