@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Lista de animes</title>
+<style>
+  :root {
+    --bg-page: #16121f;
+    --surface-1: #1e1830;
+    --surface-2: #241d33;
+    --border: #3a2f4d;
+    --border-strong: #2e2542;
+    --text-primary: #f0ebf5;
+    --text-secondary: #a99bb8;
+    --text-muted: #6b5b73;
+    --accent: #a78bfa;
+    --accent-soft: #7f77dd;
+    --text-on-accent: #1a1327;
+    --gold: #f4b942;
+    --text-on-gold: #16121f;
+    --danger: #d4537e;
+    --text-on-avatar: #1a1327;
+  }
+  [data-theme="light"] {
+    --bg-page: #f7f4fb;
+    --surface-1: #ffffff;
+    --surface-2: #f1ecf9;
+    --border: #ddd0ee;
+    --border-strong: #e7dbf5;
+    --text-primary: #2a2436;
+    --text-secondary: #6f6580;
+    --text-muted: #9992a3;
+    --accent: #8b5cf6;
+    --accent-soft: #6f62d0;
+    --text-on-accent: #ffffff;
+    --gold: #c9860f;
+    --text-on-gold: #ffffff;
+    --danger: #c23764;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 32px 16px 60px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .theme-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+  .share-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .share-btn:hover { border-color: var(--accent); }
+  .share-btn:active { transform: scale(0.97); }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: 0.5px;
+  }
+  .sub {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0 0 24px;
+  }
+  .add-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  input[type="text"], input[type="number"] {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    outline: none;
+  }
+  input[type="text"] { flex: 1; }
+  input[type="number"] { width: 90px; }
+  input:focus { border-color: var(--accent); }
+  .add-row2 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .add-row2 label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: 10px;
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button.primary:active { transform: scale(0.97); }
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .stat-card {
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .stat-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    font-style: italic;
+    cursor: pointer;
+    border-bottom: 1px dashed transparent;
+  }
+  .note:hover { border-bottom-color: var(--border-strong); }
+  .note-edit {
+    width: 100%;
+    margin-top: 6px;
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  .note-add-link {
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-top: 6px;
+    display: inline-block;
+  }
+  .note-add-link:hover { color: var(--accent); }
+  .filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .filters button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .filters button.active {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+  .item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .item.watched { opacity: 0.55; }
+  .item-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .check {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--text-muted);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: transparent;
+  }
+  .check.on {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--text-on-gold);
+  }
+  .name-wrap { flex: 1; min-width: 0; }
+  .name {
+    font-size: 15.5px;
+  }
+  .name.watched { text-decoration: line-through; color: var(--text-secondary); }
+  .ep-info {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .del {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .del:hover { color: var(--danger); }
+  .del.confirm {
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 4px 8px;
+    letter-spacing: 0.3px;
+  }
+  .stamp {
+    position: absolute;
+    right: 44px;
+    top: 16px;
+    transform: rotate(-12deg) scale(0);
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .stamp.show { transform: rotate(-12deg) scale(1); }
+  .progress-wrap {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border-strong);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .pct {
+    font-size: 11px;
+    color: var(--text-secondary);
+    min-width: 32px;
+    text-align: right;
+  }
+  .ep-controls {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stepper button {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .stepper button:active { transform: scale(0.95); }
+  .stepper span {
+    font-size: 13px;
+    color: var(--text-primary);
+    min-width: 54px;
+    text-align: center;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: -10px 0 16px;
+  }
+  .name-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .photo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .photo-upload-row input[type="file"] {
+    display: none;
+  }
+  .photo-pick-btn {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .profile-picker {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .profile-picker-title {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .profile-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-on-avatar);
+    border: 2px solid var(--border);
+  }
+  .avatar-sm {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+    border-width: 1px;
+    vertical-align: -4px;
+    margin-right: 4px;
+  }
+  .avatar-clickable { cursor: pointer; }
+  .avatar-clickable:hover { border-color: var(--accent); }
+  .profile-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 6px 16px 6px 6px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .profile-btn:hover { border-color: var(--accent); }
+  .profile-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .profile-confirm-text {
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+  .profile-confirm-text .name-display {
+    color: var(--accent);
+  }
+  .profile-confirm-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .profile-confirm-actions button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .profile-new {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .name-section input[type="text"] {
+    width: 160px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  .name-section button.primary {
+    padding: 0 14px;
+    height: 36px;
+    font-size: 13px;
+  }
+  .name-display {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+  .name-change {
+    background: none;
+    border: none;
+    color: var(--accent-soft);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 16px;
+    padding: 0 2px;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .item.dragging { opacity: 0.4; }
+  .item.drag-over { border-color: var(--accent); }
+  .suggester {
+    font-size: 11px;
+    color: var(--accent-soft);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+  }
+  .watched-date {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 0;
+    font-size: 14px;
+  }
+  .status {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <h1>Lista de animes</h1>
+      <p class="sub">Adicionem sugestões, marquem o episódio parado e acompanhem o progresso juntos.</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-btn" id="themeBtn" aria-label="Trocar tema">☾</button>
+      <button class="share-btn" id="shareBtn">Copiar link</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <div class="name-section" id="nameSection"></div>
+
+  <div class="add-row">
+    <input type="text" id="newName" placeholder="Nome do anime" maxlength="120" />
+    <button class="primary" id="addBtn">Adicionar</button>
+  </div>
+  <div class="add-row2">
+    <label for="newTotal">Eps:</label>
+    <input type="number" id="newTotal" min="0" placeholder="ex: 24" />
+    <input type="text" id="newNote" placeholder="Nota (opcional): ex: assistir dublado" style="flex:1;" />
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="searchBox" placeholder="Buscar na lista..." />
+    <button class="share-btn" id="exportBtn">Exportar</button>
+  </div>
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="filters">
+    <button class="active" data-filter="all">Todos</button>
+    <button data-filter="pending">Para assistir</button>
+    <button data-filter="watching">Assistindo</button>
+    <button data-filter="watched">Já assistidos</button>
+  </div>
+  <p class="hint">Em "Para assistir", arraste os cards pelo ⠿ para reordenar por prioridade.</p>
+
+  <div id="list"></div>
+  <p class="status" id="status">Carregando lista...</p>
+</div>
+
+<script>
+const STORAGE_KEY = 'anime-list-items';
+let items = [];
+let filter = 'all';
+let searchTerm = '';
+let draggedId = null;
+let myName = '';
+const NAME_KEY = 'my-name';
+const PROFILES_KEY = 'shared-profiles';
+const PHOTOS_KEY = 'profile-photos';
+let profiles = [];
+let photos = {};
+let pendingProfile = null;
+let pendingPhotoDataUrl = null;
+
+async function loadProfiles() {
+  try {
+    const result = await window.storage.get(PROFILES_KEY, true);
+    profiles = result ? JSON.parse(result.value) : [];
+  } catch (e) {
+    profiles = [];
+  }
+  try {
+    const result = await window.storage.get(PHOTOS_KEY, true);
+    photos = result ? JSON.parse(result.value) : {};
+  } catch (e) {
+    photos = {};
+  }
+}
+
+async function savePhoto(name, dataUrl) {
+  photos[name] = dataUrl;
+  try {
+    await window.storage.set(PHOTOS_KEY, JSON.stringify(photos), true);
+  } catch (e) {}
+}
+
+function resizeImageFile(file, size) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function nameColor(name) {
+  const colors = ['#a78bfa', '#f4b942', '#d4537e', '#5dcaa5', '#f0997b'];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function getInitials(name) {
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+function createAvatarEl(name, photoUrl, sizeClass) {
+  if (photoUrl) {
+    const img = document.createElement('img');
+    img.className = 'avatar' + (sizeClass ? ' ' + sizeClass : '');
+    img.src = photoUrl;
+    img.alt = name;
+    return img;
+  }
+  const div = document.createElement('div');
+  div.className = 'avatar' + (sizeClass ? ' ' + sizeClass : '');
+  div.style.background = nameColor(name);
+  div.textContent = getInitials(name);
+  return div;
+}
+
+async function addProfile(name) {
+  if (!profiles.includes(name)) {
+    profiles.push(name);
+    try {
+      await window.storage.set(PROFILES_KEY, JSON.stringify(profiles), true);
+    } catch (e) {}
+  }
+}
+
+async function loadMyName() {
+  try {
+    const result = await window.storage.get(NAME_KEY, false);
+    myName = result ? result.value : '';
+  } catch (e) {
+    myName = '';
+  }
+  await loadProfiles();
+  renderNameSection();
+}
+
+async function saveMyName(name) {
+  myName = name;
+  try {
+    await window.storage.set(NAME_KEY, name, false);
+  } catch (e) {}
+  renderNameSection();
+}
+
+function renderNameSection() {
+  const section = document.getElementById('nameSection');
+  section.innerHTML = '';
+  section.className = myName ? 'name-section' : 'name-section profile-picker';
+
+  if (myName) {
+    const avatar = createAvatarEl(myName, photos[myName]);
+    avatar.classList.add('avatar-clickable');
+    avatar.title = 'Trocar foto';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    fileInput.onchange = async () => {
+      if (!fileInput.files[0]) return;
+      const dataUrl = await resizeImageFile(fileInput.files[0], 160);
+      await savePhoto(myName, dataUrl);
+      renderNameSection();
+    };
+    avatar.onclick = () => fileInput.click();
+
+    const span = document.createElement('span');
+    span.innerHTML = 'Você é <span class="name-display"></span>';
+    span.querySelector('.name-display').textContent = myName;
+    const changeBtn = document.createElement('button');
+    changeBtn.className = 'name-change';
+    changeBtn.textContent = 'trocar perfil';
+    changeBtn.onclick = () => { myName = ''; pendingProfile = null; renderNameSection(); };
+    section.appendChild(avatar);
+    section.appendChild(fileInput);
+    section.appendChild(span);
+    section.appendChild(changeBtn);
+    return;
+  }
+
+  if (pendingProfile) {
+    const wrap = document.createElement('div');
+    wrap.className = 'profile-confirm';
+    const topRow = document.createElement('div');
+    topRow.style.display = 'flex';
+    topRow.style.alignItems = 'center';
+    topRow.style.gap = '10px';
+    const avatar = createAvatarEl(pendingProfile, photos[pendingProfile]);
+    const text = document.createElement('div');
+    text.className = 'profile-confirm-text';
+    text.innerHTML = 'Você está selecionando o perfil <span class="name-display"></span>, continuar?';
+    text.querySelector('.name-display').textContent = pendingProfile;
+    topRow.appendChild(avatar);
+    topRow.appendChild(text);
+    const actions = document.createElement('div');
+    actions.className = 'profile-confirm-actions';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'primary';
+    confirmBtn.textContent = 'Sim, sou eu';
+    confirmBtn.onclick = () => { const name = pendingProfile; pendingProfile = null; saveMyName(name); };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'secondary';
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.onclick = () => { pendingProfile = null; renderNameSection(); };
+    actions.appendChild(confirmBtn);
+    actions.appendChild(cancelBtn);
+    wrap.appendChild(topRow);
+    wrap.appendChild(actions);
+    section.appendChild(wrap);
+    return;
+  }
+
+  const title = document.createElement('div');
+  title.className = 'profile-picker-title';
+  title.textContent = profiles.length
+    ? 'Quem é você?'
+    : 'Ninguém criou um perfil ainda. Crie o seu:';
+  section.appendChild(title);
+
+  if (profiles.length) {
+    const options = document.createElement('div');
+    options.className = 'profile-options';
+    profiles.forEach(name => {
+      const btn = document.createElement('button');
+      btn.className = 'profile-btn';
+      const avatar = createAvatarEl(name, photos[name], 'avatar-sm');
+      avatar.style.width = '26px';
+      avatar.style.height = '26px';
+      avatar.style.fontSize = '11px';
+      const label = document.createElement('span');
+      label.textContent = name;
+      btn.appendChild(avatar);
+      btn.appendChild(label);
+      btn.onclick = () => { pendingProfile = name; renderNameSection(); };
+      options.appendChild(btn);
+    });
+    section.appendChild(options);
+  }
+
+  const newRow = document.createElement('div');
+  newRow.className = 'profile-new';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Criar novo perfil';
+  input.maxLength = 40;
+  const btn = document.createElement('button');
+  btn.className = 'primary';
+  btn.textContent = 'Criar';
+  const submit = async () => {
+    const val = input.value.trim();
+    if (!val) return;
+    await addProfile(val);
+    if (pendingPhotoDataUrl) {
+      await savePhoto(val, pendingPhotoDataUrl);
+      pendingPhotoDataUrl = null;
+    }
+    await saveMyName(val);
+  };
+  btn.onclick = submit;
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  newRow.appendChild(input);
+  newRow.appendChild(btn);
+  section.appendChild(newRow);
+
+  const photoRow = document.createElement('div');
+  photoRow.className = 'photo-upload-row';
+  const previewAvatar = createAvatarEl('?', pendingPhotoDataUrl);
+  const photoFileInput = document.createElement('input');
+  photoFileInput.type = 'file';
+  photoFileInput.accept = 'image/*';
+  const pickBtn = document.createElement('button');
+  pickBtn.className = 'photo-pick-btn';
+  pickBtn.textContent = pendingPhotoDataUrl ? 'Trocar foto' : 'Adicionar foto (opcional)';
+  pickBtn.onclick = () => photoFileInput.click();
+  photoFileInput.onchange = async () => {
+    if (!photoFileInput.files[0]) return;
+    pendingPhotoDataUrl = await resizeImageFile(photoFileInput.files[0], 160);
+    renderNameSection();
+  };
+  photoRow.appendChild(previewAvatar);
+  photoRow.appendChild(photoFileInput);
+  photoRow.appendChild(pickBtn);
+  section.appendChild(photoRow);
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function getStatus(item) {
+  if (item.watched) return 'watched';
+  if (item.currentEp && item.currentEp > 0) return 'watching';
+  return 'pending';
+}
+
+async function loadItems() {
+  const statusEl = document.getElementById('status');
+  try {
+    const result = await window.storage.get(STORAGE_KEY, true);
+    items = result ? JSON.parse(result.value) : [];
+    items.forEach(i => {
+      if (typeof i.currentEp !== 'number') i.currentEp = 0;
+      if (typeof i.totalEps !== 'number') i.totalEps = null;
+      if (typeof i.suggestedBy !== 'string') i.suggestedBy = '';
+      if (typeof i.watchedAt !== 'number') i.watchedAt = null;
+      if (typeof i.note !== 'string') i.note = '';
+    });
+  } catch (e) {
+    items = [];
+  }
+  statusEl.textContent = 'Lista compartilhada — sincronizada com quem tiver o link.';
+  render();
+}
+
+async function saveItems() {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(items), true);
+  } catch (e) {
+    document.getElementById('status').textContent = 'Não consegui salvar agora. Tenta de novo.';
+  }
+}
+
+function renderStats() {
+  const bar = document.getElementById('statsBar');
+  bar.innerHTML = '';
+  if (items.length === 0) return;
+
+  const watchedCount = items.filter(i => getStatus(i) === 'watched').length;
+  const watchingCount = items.filter(i => getStatus(i) === 'watching').length;
+  const episodesWatched = items.reduce((sum, i) => sum + (i.currentEp || 0), 0);
+
+  const stats = [
+    { num: watchedCount, label: 'Assistidos' },
+    { num: watchingCount, label: 'Assistindo' },
+    { num: episodesWatched, label: 'Eps. no total' },
+  ];
+
+  stats.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    const num = document.createElement('div');
+    num.className = 'stat-num';
+    num.textContent = s.num;
+    const label = document.createElement('div');
+    label.className = 'stat-label';
+    label.textContent = s.label;
+    card.appendChild(num);
+    card.appendChild(label);
+    bar.appendChild(card);
+  });
+}
+
+function render() {
+  renderStats();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  let visible = items;
+  if (filter !== 'all') visible = visible.filter(i => getStatus(i) === filter);
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    visible = visible.filter(i => i.name.toLowerCase().includes(q));
+  }
+
+  if (visible.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = items.length === 0
+      ? 'Nenhum anime na lista ainda. Adicionem o primeiro acima.'
+      : 'Nada por aqui nesse filtro.';
+    list.appendChild(p);
+    return;
+  }
+
+  visible.forEach(item => {
+    const status = getStatus(item);
+    const row = document.createElement('div');
+    row.className = 'item' + (status === 'watched' ? ' watched' : '');
+    row.dataset.id = item.id;
+    row.draggable = true;
+    row.addEventListener('dragstart', () => {
+      draggedId = item.id;
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      reorderItems(draggedId, item.id);
+    });
+
+    const top = document.createElement('div');
+    top.className = 'item-top';
+
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    handle.setAttribute('aria-hidden', 'true');
+
+    const check = document.createElement('div');
+    check.className = 'check' + (status === 'watched' ? ' on' : '');
+    check.textContent = status === 'watched' ? '✓' : '';
+    check.onclick = () => toggleWatched(item.id);
+
+    const nameWrap = document.createElement('div');
+    nameWrap.className = 'name-wrap';
+
+    const name = document.createElement('div');
+    name.className = 'name' + (status === 'watched' ? ' watched' : '');
+    name.textContent = item.name;
+    nameWrap.appendChild(name);
+
+    if (item.totalEps) {
+      const epInfo = document.createElement('div');
+      epInfo.className = 'ep-info';
+      epInfo.textContent = `Ep. ${item.currentEp} de ${item.totalEps}`;
+      nameWrap.appendChild(epInfo);
+    }
+
+    if (item.suggestedBy) {
+      const sug = document.createElement('div');
+      sug.className = 'suggester';
+      const avatar = createAvatarEl(item.suggestedBy, photos[item.suggestedBy], 'avatar-sm');
+      sug.appendChild(avatar);
+      sug.appendChild(document.createTextNode(`Sugerido por ${item.suggestedBy}`));
+      nameWrap.appendChild(sug);
+    }
+
+    if (status === 'watched' && item.watchedAt) {
+      const wd = document.createElement('div');
+      wd.className = 'watched-date';
+      wd.textContent = `Assistido em ${formatDate(item.watchedAt)}`;
+      nameWrap.appendChild(wd);
+    }
+
+    if (item.note) {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'note';
+      noteEl.textContent = item.note;
+      noteEl.title = 'Clique para editar';
+      noteEl.onclick = () => startEditNote(item.id, noteEl);
+      nameWrap.appendChild(noteEl);
+    } else {
+      const addNote = document.createElement('span');
+      addNote.className = 'note-add-link';
+      addNote.textContent = '+ nota';
+      addNote.onclick = () => startEditNote(item.id, addNote);
+      nameWrap.appendChild(addNote);
+    }
+
+    const stamp = document.createElement('div');
+    stamp.className = 'stamp';
+    stamp.textContent = 'VISTO';
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'Remover');
+    del.onclick = () => handleDeleteClick(item.id, del);
+
+    top.appendChild(handle);
+    top.appendChild(check);
+    top.appendChild(nameWrap);
+    top.appendChild(del);
+    row.appendChild(top);
+    row.appendChild(stamp);
+
+    if (item.totalEps) {
+      const pct = Math.min(100, Math.round((item.currentEp / item.totalEps) * 100));
+
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'progress-wrap';
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.width = pct + '%';
+      track.appendChild(fill);
+      const pctLabel = document.createElement('div');
+      pctLabel.className = 'pct';
+      pctLabel.textContent = pct + '%';
+      progressWrap.appendChild(track);
+      progressWrap.appendChild(pctLabel);
+      row.appendChild(progressWrap);
+
+      const epControls = document.createElement('div');
+      epControls.className = 'ep-controls';
+      const stepper = document.createElement('div');
+      stepper.className = 'stepper';
+
+      const minus = document.createElement('button');
+      minus.textContent = '−';
+      minus.setAttribute('aria-label', 'Episódio anterior');
+      minus.onclick = () => setEpisode(item.id, item.currentEp - 1);
+
+      const epLabel = document.createElement('span');
+      epLabel.textContent = `Ep. ${item.currentEp}`;
+
+      const plus = document.createElement('button');
+      plus.textContent = '+';
+      plus.setAttribute('aria-label', 'Assisti mais um episódio');
+      plus.onclick = () => setEpisode(item.id, item.currentEp + 1);
+
+      stepper.appendChild(minus);
+      stepper.appendChild(epLabel);
+      stepper.appendChild(plus);
+      epControls.appendChild(stepper);
+      row.appendChild(epControls);
+    }
+
+    list.appendChild(row);
+  });
+}
+
+function startEditNote(id, triggerEl) {
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'note-edit';
+  input.maxLength = 140;
+  input.value = target.note || '';
+  input.placeholder = 'ex: assistir dublado';
+  triggerEl.replaceWith(input);
+  input.focus();
+  input.select();
+  const save = async () => {
+    target.note = input.value.trim();
+    render();
+    await saveItems();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { render(); }
+  });
+}
+
+async function addItem() {
+  const input = document.getElementById('newName');
+  const totalInput = document.getElementById('newTotal');
+  const noteInput = document.getElementById('newNote');
+  const value = input.value.trim();
+  if (!value) return;
+  const totalRaw = totalInput.value.trim();
+  const totalEps = totalRaw ? Math.max(0, parseInt(totalRaw, 10)) : null;
+  const note = noteInput.value.trim();
+  items.push({ id: uid(), name: value, totalEps, currentEp: 0, watched: false, watchedAt: null, suggestedBy: myName, note, addedAt: Date.now() });
+  input.value = '';
+  totalInput.value = '';
+  noteInput.value = '';
+  render();
+  await saveItems();
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR');
+}
+
+async function reorderItems(draggedItemId, targetItemId) {
+  if (!draggedItemId || draggedItemId === targetItemId) return;
+  const fromIndex = items.findIndex(i => i.id === draggedItemId);
+  const toIndex = items.findIndex(i => i.id === targetItemId);
+  if (fromIndex === -1 || toIndex === -1) return;
+  const [moved] = items.splice(fromIndex, 1);
+  items.splice(toIndex, 0, moved);
+  draggedId = null;
+  render();
+  await saveItems();
+}
+
+async function setEpisode(id, newEp) {
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+  const max = target.totalEps || Infinity;
+  target.currentEp = Math.max(0, Math.min(newEp, max));
+  if (target.totalEps && target.currentEp >= target.totalEps) {
+    target.watched = true;
+    target.watchedAt = target.watchedAt || Date.now();
+  } else if (target.watched && target.currentEp < (target.totalEps || Infinity)) {
+    target.watched = false;
+    target.watchedAt = null;
+  }
+  render();
+  if (target.watched) flashStamp(id);
+  await saveItems();
+}
+
+async function toggleWatched(id) {
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+  target.watched = !target.watched;
+  if (target.watched) {
+    if (target.totalEps) target.currentEp = target.totalEps;
+    target.watchedAt = Date.now();
+  } else {
+    target.watchedAt = null;
+  }
+  render();
+  if (target.watched) flashStamp(id);
+  await saveItems();
+}
+
+function flashStamp(id) {
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`.item[data-id="${id}"]`);
+    const s = row && row.querySelector('.stamp');
+    if (s) {
+      s.classList.add('show');
+      setTimeout(() => s.classList.remove('show'), 900);
+    }
+  });
+}
+
+let pendingDeleteId = null;
+let pendingDeleteTimeout = null;
+
+function handleDeleteClick(id, btnEl) {
+  if (pendingDeleteId === id) {
+    clearTimeout(pendingDeleteTimeout);
+    pendingDeleteId = null;
+    removeItem(id);
+    return;
+  }
+  pendingDeleteId = id;
+  clearTimeout(pendingDeleteTimeout);
+  btnEl.classList.add('confirm');
+  btnEl.textContent = 'Excluir?';
+  pendingDeleteTimeout = setTimeout(() => {
+    pendingDeleteId = null;
+    btnEl.classList.remove('confirm');
+    btnEl.textContent = '✕';
+  }, 3000);
+}
+
+async function removeItem(id) {
+  items = items.filter(i => i.id !== id);
+  render();
+  await saveItems();
+}
+
+const THEME_KEY = 'theme-preference';
+
+async function loadTheme() {
+  let theme = 'dark';
+  try {
+    const result = await window.storage.get(THEME_KEY, false);
+    theme = result ? result.value : 'dark';
+  } catch (e) {
+    theme = 'dark';
+  }
+  applyTheme(theme);
+}
+
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeBtn').textContent = '☀';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('themeBtn').textContent = '☾';
+  }
+}
+
+async function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const newTheme = isLight ? 'dark' : 'light';
+  applyTheme(newTheme);
+  try {
+    await window.storage.set(THEME_KEY, newTheme, false);
+  } catch (e) {}
+}
+
+document.getElementById('themeBtn').onclick = toggleTheme;
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+async function copyShareLink() {
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link copiado para área de transferência');
+  } catch (e) {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('Link copiado para área de transferência');
+    } catch (e2) {
+      showToast('Não consegui copiar automaticamente');
+    }
+  }
+}
+
+function csvEscape(value) {
+  const str = String(value == null ? '' : value);
+  if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+  return str;
+}
+
+function exportList() {
+  const headers = ['Nome', 'Status', 'Episodio atual', 'Total de episodios', 'Sugerido por', 'Nota', 'Assistido em'];
+  const rows = items.map(i => [
+    i.name,
+    getStatus(i) === 'watched' ? 'Assistido' : getStatus(i) === 'watching' ? 'Assistindo' : 'Para assistir',
+    i.currentEp || 0,
+    i.totalEps || '',
+    i.suggestedBy || '',
+    i.note || '',
+    i.watchedAt ? formatDate(i.watchedAt) : ''
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lista-de-animes.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Lista exportada');
+}
+
+document.getElementById('exportBtn').onclick = exportList;
+
+document.getElementById('shareBtn').onclick = copyShareLink;
+
+document.getElementById('searchBox').addEventListener('input', e => {
+  searchTerm = e.target.value.trim();
+  render();
+});
+
+document.getElementById('addBtn').onclick = addItem;
+document.getElementById('newName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addItem();
+});
+document.getElementById('newTotal').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addItem();
+});
+document.querySelectorAll('.filters button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filter = btn.dataset.filter;
+    render();
+  };
+});
+
+loadTheme();
+loadMyName();
+loadItems();
+</script>
+</body>
+</html>
