@@ -394,7 +394,21 @@ function renderDashboard() {
 
   renderFavoriteShowcase();
 }
+/* Capas locais dos animes */
+const ANIME_COVERS = {
+  'frieren': 'assets/covers/frieren.jpg',
+  'one piece': 'assets/covers/one-piece.jpg'
+};
 
+function getAnimeCover(name) {
+  const normalizedName = name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  return ANIME_COVERS[normalizedName] || '';
+}
 function posterGradient(name) {
   const base = nameColor(name);
   return {
@@ -530,6 +544,12 @@ function render() {
     const row = document.createElement('div');
     row.className = 'item' + (status === 'watched' ? ' watched' : '');
     row.dataset.id = item.id;
+    const animeCover = getAnimeCover(item.name);
+
+if (animeCover) {
+  row.classList.add('has-cover');
+  row.style.setProperty('--item-cover', `url("${animeCover}")`);
+}
     row.draggable = true;
     row.addEventListener('dragstart', () => {
       draggedId = item.id;
