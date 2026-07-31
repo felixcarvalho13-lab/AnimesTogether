@@ -145,18 +145,14 @@
       <div class="name-section" id="nameSection"></div>
 
       <div class="anime-search-box">
-        <div class="add-row">
-          <input type="text" id="newName" placeholder="Pesquisar anime no AniList" maxlength="120" autocomplete="off" />
-          <button class="primary" id="addBtn">Pesquisar</button>
+        <div class="anilist-search-field">
+          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+          </svg>
+          <input type="text" id="newName" placeholder="Pesquisar anime no AniList" maxlength="120" autocomplete="off" aria-label="Pesquisar anime no AniList" />
         </div>
         <p class="anime-search-hint" id="animeSearchHint">Digite o nome e escolha o anime correto.</p>
         <div class="anime-search-results" id="animeSearchResults" hidden></div>
-        <div class="anime-selected" id="animeSelected" hidden></div>
-      </div>
-      <div class="add-row2">
-        <label for="newTotal">Eps:</label>
-        <input type="number" id="newTotal" min="0" placeholder="ex: 24" />
-        <input type="text" id="newNote" placeholder="Nota (opcional): ex: assistir dublado" style="flex:1;" />
       </div>
 
       <div class="tools-grid">

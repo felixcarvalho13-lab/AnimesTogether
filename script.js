@@ -1191,10 +1191,6 @@ async function searchAniList(search) {
 
 function clearAnimeSelection() {
   selectedAnime = null;
-  const selected = document.getElementById('animeSelected');
-  selected.hidden = true;
-  selected.innerHTML = '';
-  document.getElementById('addBtn').textContent = 'Pesquisar';
 }
 
 function isAnimeSaved(media) {
@@ -1204,17 +1200,14 @@ function isAnimeSaved(media) {
 async function addAnimeFromResult(media, button) {
   if (isAnimeSaved(media)) return;
 
-  const totalInput = document.getElementById('newTotal');
-  const noteInput = document.getElementById('newNote');
-  const totalRaw = totalInput.value.trim();
   const nextEpisode = media.nextAiringEpisode?.episode || null;
   const nextAiringAt = media.nextAiringEpisode?.airingAt || null;
   const calculatedAvailable = nextEpisode && nextEpisode > 1 ? nextEpisode - 1 : null;
-  const totalEps = totalRaw ? Math.max(0, parseInt(totalRaw, 10)) : media.episodes || calculatedAvailable || null;
+  const totalEps = media.episodes || calculatedAvailable || null;
   const availableEps = media.status === 'RELEASING'
     ? (calculatedAvailable || media.episodes || totalEps)
     : (media.episodes || totalEps);
-  const note = noteInput.value.trim();
+  const note = '';
   const title = animeTitle(media, activeAnimeSearchTerm);
 
   items.push({
@@ -1261,11 +1254,17 @@ async function addAnimeFromResult(media, button) {
     addedAt: Date.now()
   });
 
-  totalInput.value = '';
-  noteInput.value = '';
   button.textContent = 'Salvo na sua lista';
   button.disabled = true;
   button.classList.add('is-saved');
+
+  const searchInput = document.getElementById('newName');
+  const searchResults = document.getElementById('animeSearchResults');
+  searchInput.value = '';
+  searchResults.hidden = true;
+  searchResults.innerHTML = '';
+  document.getElementById('animeSearchHint').textContent = 'Digite o nome e escolha o anime correto.';
+  activeAnimeSearchTerm = '';
 
   render();
   await saveItems();
@@ -1332,10 +1331,6 @@ async function runAnimeSearch() {
     hint.textContent = 'Falha na pesquisa.';
     console.error(error);
   }
-}
-
-async function addItem() {
-  await runAnimeSearch();
 }
 
 function formatDate(ts) {
@@ -1600,7 +1595,6 @@ document.getElementById('searchBox').addEventListener('input', e => {
   render();
 });
 
-document.getElementById('addBtn').onclick = addItem;
 document.getElementById('newName').addEventListener('input', () => {
   clearAnimeSelection();
   clearTimeout(animeSearchTimer);
@@ -1625,13 +1619,9 @@ document.getElementById('newName').addEventListener('input', () => {
 document.getElementById('newName').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     e.preventDefault();
-    addItem();
+    runAnimeSearch();
   }
 });
-document.getElementById('newTotal').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addItem();
-});
-
 
 document.getElementById('heroAddBtn').onclick = () => {
   document.getElementById('newName').scrollIntoView({ behavior: 'smooth', block: 'center' });

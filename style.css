@@ -2195,3 +2195,37 @@ body {
     transition: none !important;
   }
 }
+
+/* Sprint 6.4.2.3 — busca AniList simplificada */
+.anilist-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.anilist-search-field svg {
+  position: absolute;
+  left: 15px;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+  transition: stroke .2s ease;
+}
+
+.anilist-search-field input {
+  width: 100%;
+  padding-left: 45px;
+}
+
+.anilist-search-field:focus-within svg {
+  stroke: var(--accent);
+}
+
+.anime-search-results[hidden] {
+  display: none;
+}
