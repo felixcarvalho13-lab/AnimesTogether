@@ -37,6 +37,10 @@ let profiles = [];
 let photos = {};
 let pendingProfile = null;
 let pendingPhotoDataUrl = null;
+let selectedAnime = null;
+let animeSearchTimer = null;
+let animeSearchRequest = 0;
+let activeAnimeSearchTerm = '';
 
 async function loadProfiles() {
   try {
@@ -282,11 +286,94 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+function getAvailableEpisodes(item) {
+  if (typeof item.availableEps === 'number' && item.availableEps > 0) return item.availableEps;
+  if (typeof item.totalEps === 'number' && item.totalEps > 0) return item.totalEps;
+  return null;
+}
+
 function getStatus(item) {
-  if (item.watched) return 'watched';
-  if (item.currentEp && item.currentEp > 0) return 'watching';
+  const current = Number(item.currentEp) || 0;
+  const available = getAvailableEpisodes(item);
+  const isFinished = item.anilistStatus === 'FINISHED';
+
+  if (!item.anilistStatus && item.watched) return 'watched';
+  if (isFinished && available && current >= available) return 'watched';
+  if (!isFinished && available && current >= available && current > 0) return 'upToDate';
+  if (current > 0) return 'watching';
   return 'pending';
 }
+
+function getStatusLabel(item) {
+  const status = getStatus(item);
+  if (status === 'watched') return 'Concluído';
+  if (status === 'upToDate') return 'Em dia';
+  if (status === 'watching') return 'Assistindo';
+  return 'Para assistir';
+}
+
+function getNewEpisodeCount(item) {
+  const available = getAvailableEpisodes(item);
+  const caughtUpAt = Number(item.caughtUpAvailableEps) || 0;
+  const current = Number(item.currentEp) || 0;
+  const isReleasing = item.anilistStatus === 'RELEASING';
+
+  if (!isReleasing || !available || !caughtUpAt) return 0;
+  if (available <= caughtUpAt || current >= available) return 0;
+  return Math.max(0, available - current);
+}
+
+function getNextAiringInfo(item) {
+  const airingAt = Number(item.nextAiringAt) || 0;
+  if (!airingAt) {
+    return {
+      relative: 'Data prevista para o próximo episódio ainda não definida',
+      exact: '',
+      urgency: 'unknown'
+    };
+  }
+
+  const target = airingAt * 1000;
+  const diff = target - Date.now();
+  const absDiff = Math.max(0, diff);
+  const hours = Math.ceil(absDiff / 3600000);
+  const days = Math.ceil(absDiff / 86400000);
+
+  let relative;
+  let urgency;
+
+  if (diff <= 0) {
+    relative = 'O próximo episódio já deve estar disponível';
+    urgency = 'now';
+  } else if (hours <= 1) {
+    relative = 'Novo episódio em menos de 1 hora';
+    urgency = 'now';
+  } else if (hours < 12) {
+    relative = `Novo episódio em ${hours} horas`;
+    urgency = 'urgent';
+  } else if (hours < 24) {
+    relative = 'Novo episódio ainda hoje';
+    urgency = 'soon';
+  } else if (hours < 48) {
+    relative = 'Novo episódio amanhã';
+    urgency = 'soon';
+  } else {
+    relative = `Novo episódio em ${days} dias`;
+    urgency = days <= 7 ? 'medium' : 'far';
+  }
+
+  const exact = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(target));
+
+  return { relative, exact: `Previsto para ${exact}`, urgency };
+}
+
 
 async function loadItems() {
   const statusEl = document.getElementById('status');
@@ -296,17 +383,42 @@ async function loadItems() {
     items.forEach(i => {
       if (typeof i.currentEp !== 'number') i.currentEp = 0;
       if (typeof i.totalEps !== 'number') i.totalEps = null;
+      if (typeof i.availableEps !== 'number') i.availableEps = i.totalEps;
+      if (typeof i.nextAiringEpisode !== 'number') i.nextAiringEpisode = null;
+      if (typeof i.nextAiringAt !== 'number') i.nextAiringAt = null;
+      if (typeof i.episodesUpdatedAt !== 'number') i.episodesUpdatedAt = null;
+      if (typeof i.caughtUpAvailableEps !== 'number') {
+        const available = getAvailableEpisodes(i);
+        i.caughtUpAvailableEps = i.anilistStatus === 'RELEASING' && available && (Number(i.currentEp) || 0) >= available
+          ? available
+          : null;
+      }
       if (typeof i.suggestedBy !== 'string') i.suggestedBy = '';
       if (typeof i.watchedAt !== 'number') i.watchedAt = null;
       if (typeof i.note !== 'string') i.note = '';
       if (typeof i.favorite !== 'boolean') i.favorite = false;
       if (typeof i.addedAt !== 'number') i.addedAt = Date.now();
+      if (!i.titles || typeof i.titles !== 'object') i.titles = { english: null, romaji: i.name || null, native: null };
+      if (typeof i.poster !== 'string') i.poster = null;
+      if (typeof i.banner !== 'string') i.banner = null;
+      if (typeof i.synopsis !== 'string') i.synopsis = '';
+      if (!Array.isArray(i.genres)) i.genres = [];
+      if (!Array.isArray(i.studios)) i.studios = i.studio ? [i.studio] : [];
+      if (typeof i.studio !== 'string') i.studio = i.studios[0] || null;
+      if (typeof i.score !== 'number') i.score = null;
+      if (typeof i.year !== 'number') i.year = null;
+      if (typeof i.season !== 'string') i.season = null;
+      if (typeof i.seasonLabel !== 'string') i.seasonLabel = formatAnimeSeason(i.season);
+      if (typeof i.anilistStatus !== 'string') i.anilistStatus = null;
+      if (typeof i.releaseStatus !== 'string') i.releaseStatus = formatAnimeStatus(i.anilistStatus);
+      if (i.trailer && typeof i.trailer === 'object' && !i.trailer.url) i.trailer.url = buildTrailerUrl(i.trailer);
     });
   } catch (e) {
     items = [];
   }
   statusEl.textContent = 'Dados salvos neste navegador. A sincronização compartilhada será ativada em uma próxima etapa.';
   render();
+  refreshAniListEpisodeData();
 }
 
 async function saveItems() {
@@ -323,6 +435,7 @@ function renderStats() {
   if (items.length === 0) return;
 
   const watchedCount = items.filter(i => getStatus(i) === 'watched').length;
+  const upToDateCount = items.filter(i => getStatus(i) === 'upToDate').length;
   const watchingCount = items.filter(i => getStatus(i) === 'watching').length;
   const pendingCount = items.filter(i => getStatus(i) === 'pending').length;
   const favoriteCount = items.filter(i => i.favorite).length;
@@ -331,7 +444,8 @@ function renderStats() {
 
   const stats = [
     { num: items.length, label: 'Na lista' },
-    { num: watchedCount, label: 'Assistidos' },
+    { num: watchedCount, label: 'Concluídos' },
+    { num: upToDateCount, label: 'Em dia' },
     { num: watchingCount, label: 'Assistindo' },
     { num: pendingCount, label: 'Na fila' },
     { num: favoriteCount, label: 'Favoritos' },
@@ -356,8 +470,8 @@ function renderStats() {
 function renderContinueCard() {
   const card = document.getElementById('continueCard');
   const watching = items
-    .filter(i => getStatus(i) === 'watching')
-    .sort((a, b) => (b.currentEp || 0) - (a.currentEp || 0))[0];
+    .filter(i => getNewEpisodeCount(i) > 0)
+    .sort((a, b) => getNewEpisodeCount(b) - getNewEpisodeCount(a) || (b.episodesUpdatedAt || 0) - (a.episodesUpdatedAt || 0))[0];
 
   if (!watching) {
     card.hidden = true;
@@ -365,26 +479,38 @@ function renderContinueCard() {
     return;
   }
 
-  const pct = watching.totalEps
-    ? Math.min(100, Math.round((watching.currentEp / watching.totalEps) * 100))
+  const available = getAvailableEpisodes(watching);
+  const newEpisodes = getNewEpisodeCount(watching);
+  const pct = available
+    ? Math.min(100, Math.round((watching.currentEp / available) * 100))
     : 0;
 
   card.hidden = false;
   card.dataset.id = watching.id;
   document.getElementById('continueName').textContent = watching.name;
-  document.getElementById('continueInfo').textContent = watching.totalEps
-    ? `Você está no episódio ${watching.currentEp} de ${watching.totalEps}.`
-    : `Você está no episódio ${watching.currentEp}.`;
+  document.getElementById('continueInfo').textContent = newEpisodes === 1
+    ? `Saiu 1 episódio novo. Você está no episódio ${watching.currentEp} de ${available} disponíveis.`
+    : `Saíram ${newEpisodes} episódios novos. Você está no episódio ${watching.currentEp} de ${available} disponíveis.`;
   document.getElementById('continueProgress').style.width = pct + '%';
   document.getElementById('continuePct').textContent = pct + '%';
-  document.getElementById('continueCover').textContent = getInitials(watching.name);
-  document.getElementById('continueCover').style.background =
-    `linear-gradient(145deg, ${nameColor(watching.name)}, color-mix(in srgb, ${nameColor(watching.name)} 58%, #16121f 42%))`;
+  const continueBtn = document.getElementById('continueBtn');
+  continueBtn.textContent = newEpisodes === 1 ? '▶ Assistir novo episódio' : `▶ Assistir próximo (${newEpisodes} pendentes)`;
+
+  const continueCover = document.getElementById('continueCover');
+  const animeArt = getAnimeArt(watching.name, watching);
+  continueCover.textContent = animeArt?.poster ? '' : getInitials(watching.name);
+  continueCover.style.backgroundImage = animeArt?.poster
+    ? `linear-gradient(rgba(10, 7, 16, 0.08), rgba(10, 7, 16, 0.35)), url("${animeArt.poster}")`
+    : `linear-gradient(145deg, ${nameColor(watching.name)}, color-mix(in srgb, ${nameColor(watching.name)} 58%, #16121f 42%))`;
+  continueCover.style.backgroundSize = animeArt?.poster ? 'cover' : '';
+  continueCover.style.backgroundPosition = animeArt?.poster ? 'center' : '';
+  card.style.setProperty('--continue-accent', animeArt?.accent || nameColor(watching.name));
+  card.classList.toggle('has-anime-art', Boolean(animeArt));
 }
 
 
 function renderDashboard() {
-  const watching = items.filter(i => getStatus(i) === 'watching').length;
+  const watching = items.filter(i => ['watching', 'upToDate'].includes(getStatus(i))).length;
   const favorites = items.filter(i => i.favorite).length;
   const completed = items.filter(i => getStatus(i) === 'watched').length;
 
@@ -394,21 +520,35 @@ function renderDashboard() {
 
   renderFavoriteShowcase();
 }
-/* Capas locais dos animes */
-const ANIME_COVERS = {
-  'frieren': 'assets/covers/frieren.jpg',
-  'one piece': 'assets/covers/one-piece.jpg'
+/* Identidade visual local dos animes */
+const ANIME_ART = {
+  'frieren': {
+    background: 'assets/covers/backgrounds/frieren.jpg',
+    poster: 'assets/covers/posters/frieren.jpg',
+    accent: '#78A8FF'
+  },
+  'one piece': {
+    background: 'assets/covers/backgrounds/one-piece.jpg',
+    poster: 'assets/covers/posters/one-piece.jpg',
+    accent: '#E95F55'
+  }
 };
 
-function getAnimeCover(name) {
-  const normalizedName = name
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  return ANIME_COVERS[normalizedName] || '';
+function normalizeAnimeName(name) {
+  return name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
+
+function getAnimeArt(name, item = null) {
+  if (item && (item.poster || item.banner)) {
+    return {
+      poster: item.poster || null,
+      background: item.banner || item.poster || null,
+      accent: item.accent || '#7C4DFF'
+    };
+  }
+  return ANIME_ART[normalizeAnimeName(name)] || null;
+}
+
 function posterGradient(name) {
   const base = nameColor(name);
   return {
@@ -432,10 +572,17 @@ function renderFavoriteShowcase() {
 
     const art = document.createElement('div');
     art.className = 'poster-art';
-    const gradient = posterGradient(item.name);
-    art.style.setProperty('--poster-a', gradient.a);
-    art.style.setProperty('--poster-b', gradient.b);
-    art.textContent = getInitials(item.name);
+    const animeArt = getAnimeArt(item.name, item);
+    if (animeArt?.poster) {
+      art.classList.add('has-image');
+      art.style.backgroundImage = `url("${animeArt.poster}")`;
+      art.style.setProperty('--poster-accent', animeArt.accent);
+    } else {
+      const gradient = posterGradient(item.name);
+      art.style.setProperty('--poster-a', gradient.a);
+      art.style.setProperty('--poster-b', gradient.b);
+      art.textContent = getInitials(item.name);
+    }
 
     const star = document.createElement('span');
     star.className = 'poster-star';
@@ -507,18 +654,25 @@ function getSortedItems(list) {
   return result;
 }
 
+let hasRenderedAnimeList = false;
+let previousVisibleAnimeIds = new Set();
+
 function render() {
   renderStats();
   renderContinueCard();
   renderDashboard();
+
   const list = document.getElementById('list');
   list.innerHTML = '';
+
   let visible = items;
+
   if (filter === 'favorites') {
     visible = visible.filter(i => i.favorite);
   } else if (filter !== 'all') {
     visible = visible.filter(i => getStatus(i) === filter);
   }
+
   if (searchTerm) {
     const q = searchTerm.toLowerCase();
     visible = visible.filter(i =>
@@ -527,7 +681,9 @@ function render() {
       (i.suggestedBy || '').toLowerCase().includes(q)
     );
   }
+
   visible = getSortedItems(visible);
+  const currentVisibleAnimeIds = new Set(visible.map(item => String(item.id)));
 
   if (visible.length === 0) {
     const p = document.createElement('p');
@@ -536,36 +692,80 @@ function render() {
       ? 'Nenhum anime na lista ainda. Adicionem o primeiro acima.'
       : 'Nada por aqui nesse filtro.';
     list.appendChild(p);
+    previousVisibleAnimeIds = currentVisibleAnimeIds;
+    hasRenderedAnimeList = true;
     return;
   }
 
-  visible.forEach(item => {
+  visible.forEach((item, index) => {
     const status = getStatus(item);
+    const animeArt = getAnimeArt(item.name, item);
+
     const row = document.createElement('div');
     row.className = 'item' + (status === 'watched' ? ' watched' : '');
     row.dataset.id = item.id;
-    const animeCover = getAnimeCover(item.name);
 
-if (animeCover) {
-  row.classList.add('has-cover');
-  row.style.setProperty('--item-cover', `url("${animeCover}")`);
-}
+    const isNewlyVisible = !previousVisibleAnimeIds.has(String(item.id));
+    if (!hasRenderedAnimeList || isNewlyVisible) {
+      row.classList.add('item-enter');
+      row.style.setProperty('--item-enter-delay', `${Math.min(index, 7) * 38}ms`);
+    }
+
+    if (animeArt) {
+      row.classList.add('has-cover');
+      row.style.setProperty('--item-cover', `url("${animeArt.background}")`);
+      row.style.setProperty('--anime-accent', animeArt.accent);
+    }
+
     row.draggable = true;
+
     row.addEventListener('dragstart', () => {
       draggedId = item.id;
       row.classList.add('dragging');
     });
-    row.addEventListener('dragend', () => row.classList.remove('dragging'));
-    row.addEventListener('dragover', e => {
-      e.preventDefault();
+
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+    });
+
+    row.addEventListener('dragover', event => {
+      event.preventDefault();
       row.classList.add('drag-over');
     });
-    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-    row.addEventListener('drop', e => {
-      e.preventDefault();
+
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drag-over');
+    });
+
+    row.addEventListener('drop', event => {
+      event.preventDefault();
       row.classList.remove('drag-over');
       reorderItems(draggedId, item.id);
     });
+
+    const cardLayout = document.createElement('div');
+    cardLayout.className = 'anime-card-layout';
+
+    let posterMeta = null;
+
+    if (animeArt?.poster) {
+      cardLayout.classList.add('has-poster');
+
+      posterMeta = document.createElement('div');
+      posterMeta.className = 'anime-card-poster-column';
+
+      const poster = document.createElement('img');
+      poster.className = 'anime-card-poster';
+      poster.src = animeArt.poster;
+      poster.alt = `Capa de ${item.name}`;
+      poster.loading = 'lazy';
+
+      posterMeta.appendChild(poster);
+      cardLayout.appendChild(posterMeta);
+    }
+
+    const cardContent = document.createElement('div');
+    cardContent.className = 'anime-card-content';
 
     const top = document.createElement('div');
     top.className = 'item-top';
@@ -578,37 +778,90 @@ if (animeCover) {
     const check = document.createElement('div');
     check.className = 'check' + (status === 'watched' ? ' on' : '');
     check.textContent = status === 'watched' ? '✓' : '';
+    check.setAttribute('role', 'button');
+    check.setAttribute('tabindex', '0');
+    check.setAttribute('aria-label', status === 'watched'
+      ? 'Marcar como não assistido'
+      : 'Marcar como assistido'
+    );
     check.onclick = () => toggleWatched(item.id);
+    check.onkeydown = event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleWatched(item.id);
+      }
+    };
 
     const nameWrap = document.createElement('div');
     nameWrap.className = 'name-wrap';
 
+    const titleLine = document.createElement('div');
+    titleLine.className = 'anime-title-line';
+
     const name = document.createElement('div');
     name.className = 'name' + (status === 'watched' ? ' watched' : '');
     name.textContent = item.name;
-    nameWrap.appendChild(name);
+    titleLine.appendChild(name);
 
-    if (item.totalEps) {
-      const epInfo = document.createElement('div');
-      epInfo.className = 'ep-info';
-      epInfo.textContent = `Ep. ${item.currentEp} de ${item.totalEps}`;
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `anime-status-badge status-${status}`;
+    statusBadge.textContent = getStatusLabel(item);
+    titleLine.appendChild(statusBadge);
+    nameWrap.appendChild(titleLine);
+
+    const availableEpisodes = getAvailableEpisodes(item);
+    const epInfo = document.createElement('div');
+    epInfo.className = 'ep-info';
+    epInfo.textContent = availableEpisodes
+      ? `Ep. ${item.currentEp} de ${availableEpisodes} disponíveis`
+      : `Ep. ${item.currentEp} · total desconhecido`;
+
+    if (posterMeta) {
+      posterMeta.appendChild(epInfo);
+    } else {
       nameWrap.appendChild(epInfo);
     }
 
+    if (status === 'upToDate' && item.anilistStatus === 'RELEASING') {
+      const airingInfo = getNextAiringInfo(item);
+      const nextAiring = document.createElement('div');
+      nextAiring.className = `next-airing next-airing-${airingInfo.urgency}`;
+
+      const countdown = document.createElement('strong');
+      countdown.textContent = `⏳ ${airingInfo.relative}`;
+      nextAiring.appendChild(countdown);
+
+      if (airingInfo.exact) {
+        const date = document.createElement('span');
+        date.textContent = `📅 ${airingInfo.exact}`;
+        nextAiring.appendChild(date);
+      }
+
+      nameWrap.appendChild(nextAiring);
+    }
+
     if (item.suggestedBy) {
-      const sug = document.createElement('div');
-      sug.className = 'suggester';
-      const avatar = createAvatarEl(item.suggestedBy, photos[item.suggestedBy], 'avatar-sm');
-      sug.appendChild(avatar);
-      sug.appendChild(document.createTextNode(`Sugerido por ${item.suggestedBy}`));
-      nameWrap.appendChild(sug);
+      const suggester = document.createElement('div');
+      suggester.className = 'suggester';
+
+      const avatar = createAvatarEl(
+        item.suggestedBy,
+        photos[item.suggestedBy],
+        'avatar-sm'
+      );
+
+      suggester.appendChild(avatar);
+      suggester.appendChild(
+        document.createTextNode(`Sugerido por ${item.suggestedBy}`)
+      );
+      nameWrap.appendChild(suggester);
     }
 
     if (status === 'watched' && item.watchedAt) {
-      const wd = document.createElement('div');
-      wd.className = 'watched-date';
-      wd.textContent = `Assistido em ${formatDate(item.watchedAt)}`;
-      nameWrap.appendChild(wd);
+      const watchedDate = document.createElement('div');
+      watchedDate.className = 'watched-date';
+      watchedDate.textContent = `Assistido em ${formatDate(item.watchedAt)}`;
+      nameWrap.appendChild(watchedDate);
     }
 
     if (item.note) {
@@ -626,18 +879,19 @@ if (animeCover) {
       nameWrap.appendChild(addNote);
     }
 
-    const stamp = document.createElement('div');
-    stamp.className = 'stamp';
-    stamp.textContent = 'VISTO';
-
     const actions = document.createElement('div');
     actions.className = 'item-actions';
 
     const favorite = document.createElement('button');
     favorite.className = 'favorite-btn' + (item.favorite ? ' on' : '');
     favorite.textContent = item.favorite ? '★' : '☆';
-    favorite.setAttribute('aria-label', item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
-    favorite.title = item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+    favorite.setAttribute(
+      'aria-label',
+      item.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+    );
+    favorite.title = item.favorite
+      ? 'Remover dos favoritos'
+      : 'Adicionar aos favoritos';
     favorite.onclick = () => toggleFavorite(item.id);
 
     const del = document.createElement('button');
@@ -646,35 +900,52 @@ if (animeCover) {
     del.setAttribute('aria-label', 'Remover');
     del.onclick = () => handleDeleteClick(item.id);
 
+    actions.appendChild(favorite);
+    actions.appendChild(del);
+
     top.appendChild(handle);
     top.appendChild(check);
     top.appendChild(nameWrap);
-    actions.appendChild(favorite);
-    actions.appendChild(del);
     top.appendChild(actions);
-    row.appendChild(top);
-    row.appendChild(stamp);
 
-    if (item.totalEps) {
-      const pct = Math.min(100, Math.round((item.currentEp / item.totalEps) * 100));
+    const stamp = document.createElement('div');
+    stamp.className = 'stamp';
+    stamp.textContent = 'VISTO';
 
-      const progressWrap = document.createElement('div');
-      progressWrap.className = 'progress-wrap';
-      const track = document.createElement('div');
-      track.className = 'bar-track';
-      const fill = document.createElement('div');
-      fill.className = 'bar-fill';
-      fill.style.width = pct + '%';
-      track.appendChild(fill);
-      const pctLabel = document.createElement('div');
-      pctLabel.className = 'pct';
-      pctLabel.textContent = pct + '%';
-      progressWrap.appendChild(track);
-      progressWrap.appendChild(pctLabel);
-      row.appendChild(progressWrap);
+    cardContent.appendChild(top);
+    cardContent.appendChild(stamp);
+
+    {
+      const available = getAvailableEpisodes(item);
+      const pct = available
+        ? Math.min(100, Math.round((item.currentEp / available) * 100))
+        : 0;
+
+      if (available) {
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'progress-wrap';
+
+        const track = document.createElement('div');
+        track.className = 'bar-track';
+
+        const fill = document.createElement('div');
+        fill.className = 'bar-fill';
+        fill.style.width = pct + '%';
+
+        track.appendChild(fill);
+
+        const pctLabel = document.createElement('div');
+        pctLabel.className = 'pct';
+        pctLabel.textContent = pct + '%';
+
+        progressWrap.appendChild(track);
+        progressWrap.appendChild(pctLabel);
+        cardContent.appendChild(progressWrap);
+      }
 
       const epControls = document.createElement('div');
       epControls.className = 'ep-controls';
+
       const stepper = document.createElement('div');
       stepper.className = 'stepper';
 
@@ -683,23 +954,47 @@ if (animeCover) {
       minus.setAttribute('aria-label', 'Episódio anterior');
       minus.onclick = () => setEpisode(item.id, item.currentEp - 1);
 
-      const epLabel = document.createElement('span');
-      epLabel.textContent = `Ep. ${item.currentEp}`;
+      const epInput = document.createElement('input');
+      epInput.type = 'number';
+      epInput.className = 'episode-input';
+      epInput.min = '0';
+      if (available) epInput.max = String(available);
+      epInput.value = String(item.currentEp || 0);
+      epInput.setAttribute('aria-label', `Episódio atual de ${item.name}`);
+      epInput.title = 'Clique e digite o episódio atual';
+      const commitEpisode = () => {
+        const value = Number.parseInt(epInput.value, 10);
+        setEpisode(item.id, Number.isFinite(value) ? value : item.currentEp);
+      };
+      epInput.addEventListener('change', commitEpisode);
+      epInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          epInput.blur();
+        }
+      });
 
       const plus = document.createElement('button');
       plus.textContent = '+';
       plus.setAttribute('aria-label', 'Assisti mais um episódio');
+      plus.disabled = Boolean(available && item.currentEp >= available);
       plus.onclick = () => setEpisode(item.id, item.currentEp + 1);
 
       stepper.appendChild(minus);
-      stepper.appendChild(epLabel);
+      stepper.appendChild(epInput);
       stepper.appendChild(plus);
+
       epControls.appendChild(stepper);
-      row.appendChild(epControls);
+      cardContent.appendChild(epControls);
     }
 
+    cardLayout.appendChild(cardContent);
+    row.appendChild(cardLayout);
     list.appendChild(row);
   });
+
+  previousVisibleAnimeIds = currentVisibleAnimeIds;
+  hasRenderedAnimeList = true;
 }
 
 function startEditNote(id, triggerEl) {
@@ -726,21 +1021,321 @@ function startEditNote(id, triggerEl) {
   });
 }
 
-async function addItem() {
-  const input = document.getElementById('newName');
+const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
+
+function stripHtml(text = '') {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  return (doc.body.textContent || '').trim();
+}
+
+function normalizeAnimeTitle(value = '') {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]+/g, ' ')
+    .trim();
+}
+
+function animeTitle(media, searchTerm = activeAnimeSearchTerm) {
+  const query = normalizeAnimeTitle(searchTerm);
+  const candidates = [
+    ...(Array.isArray(media.synonyms) ? media.synonyms : []),
+    media.title?.english,
+    media.title?.romaji,
+    media.title?.userPreferred,
+    media.title?.native
+  ].filter(Boolean);
+
+  if (query) {
+    const exactMatch = candidates.find(title => normalizeAnimeTitle(title) === query);
+    if (exactMatch) return exactMatch;
+
+    const startsWithMatch = candidates.find(title => normalizeAnimeTitle(title).startsWith(query));
+    if (startsWithMatch) return startsWithMatch;
+  }
+
+  return media.title?.english
+    || media.title?.userPreferred
+    || media.title?.romaji
+    || media.title?.native
+    || candidates[0]
+    || 'Anime sem título';
+}
+
+function formatAnimeStatus(status) {
+  const labels = { FINISHED: 'Finalizado', RELEASING: 'Em exibição', NOT_YET_RELEASED: 'Ainda não lançado', CANCELLED: 'Cancelado', HIATUS: 'Em pausa' };
+  return labels[status] || status || 'Status desconhecido';
+}
+
+function formatAnimeSeason(season) {
+  const labels = { WINTER: 'Inverno', SPRING: 'Primavera', SUMMER: 'Verão', FALL: 'Outono' };
+  return labels[season] || season || null;
+}
+
+function buildTrailerUrl(trailer) {
+  if (!trailer?.id || !trailer?.site) return null;
+  const site = trailer.site.toLowerCase();
+  if (site === 'youtube') return `https://www.youtube.com/watch?v=${trailer.id}`;
+  if (site === 'dailymotion') return `https://www.dailymotion.com/video/${trailer.id}`;
+  return null;
+}
+
+async function refreshAniListEpisodeData() {
+  const ids = items.map(item => item.anilistId).filter(Number.isFinite);
+  if (!ids.length) return;
+
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 50) {
+        media(id_in: $ids, type: ANIME) {
+          id
+          episodes
+          status
+          nextAiringEpisode { episode airingAt }
+        }
+      }
+    }`;
+
+  try {
+    const response = await fetch(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query, variables: { ids } })
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    const mediaList = payload.data?.Page?.media || [];
+    let changed = false;
+
+    mediaList.forEach(media => {
+      const item = items.find(entry => entry.anilistId === media.id);
+      if (!item) return;
+      const previousAvailable = getAvailableEpisodes(item);
+      const wasUpToDate = getStatus(item) === 'upToDate';
+      if (wasUpToDate && previousAvailable) item.caughtUpAvailableEps = previousAvailable;
+      const nextEpisode = media.nextAiringEpisode?.episode || null;
+      const nextAiringAt = media.nextAiringEpisode?.airingAt || null;
+      const calculatedAvailable = nextEpisode && nextEpisode > 1 ? nextEpisode - 1 : null;
+      const available = media.status === 'RELEASING'
+        ? (calculatedAvailable || media.episodes || item.totalEps || null)
+        : (media.episodes || item.totalEps || calculatedAvailable || null);
+
+      if (item.anilistStatus !== media.status) changed = true;
+      if (item.totalEps !== (media.episodes || item.totalEps || null)) changed = true;
+      if (item.availableEps !== available) changed = true;
+      if (item.nextAiringEpisode !== nextEpisode) changed = true;
+      if (item.nextAiringAt !== nextAiringAt) changed = true;
+
+      item.anilistStatus = media.status || item.anilistStatus;
+      item.releaseStatus = formatAnimeStatus(item.anilistStatus);
+      if (media.episodes) item.totalEps = media.episodes;
+      item.availableEps = available;
+      item.nextAiringEpisode = nextEpisode;
+      item.nextAiringAt = nextAiringAt;
+      item.episodesUpdatedAt = Date.now();
+
+      const currentStatus = getStatus(item);
+      item.watched = currentStatus === 'watched';
+      if (currentStatus !== 'watched') item.watchedAt = null;
+      if (currentStatus === 'upToDate' && available) item.caughtUpAvailableEps = available;
+
+      if (previousAvailable && available && available > previousAvailable && item.currentEp < available) {
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      render();
+      await saveItems();
+      showToast('Episódios disponíveis atualizados pelo AniList.');
+    }
+  } catch (error) {
+    console.warn('Não foi possível atualizar os episódios agora.', error);
+  }
+}
+
+async function searchAniList(search) {
+  const query = `
+    query ($search: String) {
+      Page(page: 1, perPage: 8) {
+        media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+          id
+          title { romaji english native userPreferred }
+          synonyms
+          coverImage { large extraLarge color }
+          bannerImage
+          description(asHtml: false)
+          episodes
+          genres
+          averageScore
+          season
+          seasonYear
+          status
+          studios(isMain: true) { nodes { name } }
+          trailer { id site thumbnail }
+          nextAiringEpisode { episode airingAt }
+        }
+      }
+    }`;
+  const response = await fetch(ANILIST_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ query, variables: { search } })
+  });
+  if (!response.ok) throw new Error(`AniList respondeu com status ${response.status}`);
+  const payload = await response.json();
+  if (payload.errors?.length) throw new Error(payload.errors[0].message);
+  return payload.data?.Page?.media || [];
+}
+
+function clearAnimeSelection() {
+  selectedAnime = null;
+  const selected = document.getElementById('animeSelected');
+  selected.hidden = true;
+  selected.innerHTML = '';
+  document.getElementById('addBtn').textContent = 'Pesquisar';
+}
+
+function isAnimeSaved(media) {
+  return items.some(item => item.anilistId === media.id);
+}
+
+async function addAnimeFromResult(media, button) {
+  if (isAnimeSaved(media)) return;
+
   const totalInput = document.getElementById('newTotal');
   const noteInput = document.getElementById('newNote');
-  const value = input.value.trim();
-  if (!value) return;
   const totalRaw = totalInput.value.trim();
-  const totalEps = totalRaw ? Math.max(0, parseInt(totalRaw, 10)) : null;
+  const nextEpisode = media.nextAiringEpisode?.episode || null;
+  const nextAiringAt = media.nextAiringEpisode?.airingAt || null;
+  const calculatedAvailable = nextEpisode && nextEpisode > 1 ? nextEpisode - 1 : null;
+  const totalEps = totalRaw ? Math.max(0, parseInt(totalRaw, 10)) : media.episodes || calculatedAvailable || null;
+  const availableEps = media.status === 'RELEASING'
+    ? (calculatedAvailable || media.episodes || totalEps)
+    : (media.episodes || totalEps);
   const note = noteInput.value.trim();
-  items.push({ id: uid(), name: value, totalEps, currentEp: 0, watched: false, watchedAt: null, suggestedBy: myName, note, favorite: false, addedAt: Date.now() });
-  input.value = '';
+  const title = animeTitle(media, activeAnimeSearchTerm);
+
+  items.push({
+    id: uid(),
+    anilistId: media.id,
+    name: title,
+    titles: {
+      english: media.title?.english || null,
+      romaji: media.title?.romaji || null,
+      native: media.title?.native || null,
+      preferred: media.title?.userPreferred || null,
+      synonyms: Array.isArray(media.synonyms) ? media.synonyms : []
+    },
+    poster: media.coverImage?.extraLarge || media.coverImage?.large || null,
+    banner: media.bannerImage || null,
+    accent: media.coverImage?.color || '#7C4DFF',
+    synopsis: stripHtml(media.description || ''),
+    genres: Array.isArray(media.genres) ? media.genres : [],
+    score: typeof media.averageScore === 'number' ? media.averageScore : null,
+    studios: media.studios?.nodes?.map(studio => studio.name).filter(Boolean) || [],
+    studio: media.studios?.nodes?.[0]?.name || null,
+    year: media.seasonYear || null,
+    season: media.season || null,
+    seasonLabel: formatAnimeSeason(media.season),
+    anilistStatus: media.status || null,
+    releaseStatus: formatAnimeStatus(media.status),
+    trailer: media.trailer ? {
+      id: media.trailer.id || null,
+      site: media.trailer.site || null,
+      thumbnail: media.trailer.thumbnail || null,
+      url: buildTrailerUrl(media.trailer)
+    } : null,
+    totalEps,
+    availableEps,
+    nextAiringEpisode: nextEpisode,
+    nextAiringAt,
+    episodesUpdatedAt: Date.now(),
+    currentEp: 0,
+    watched: false,
+    watchedAt: null,
+    suggestedBy: myName,
+    note,
+    favorite: false,
+    addedAt: Date.now()
+  });
+
   totalInput.value = '';
   noteInput.value = '';
+  button.textContent = 'Salvo na sua lista';
+  button.disabled = true;
+  button.classList.add('is-saved');
+
   render();
   await saveItems();
+  showToast(`${title} adicionado à lista`);
+}
+
+function renderAnimeResults(results) {
+  const container = document.getElementById('animeSearchResults');
+  container.innerHTML = '';
+  if (!results.length) {
+    container.innerHTML = '<p class="anime-search-empty">Nenhum anime encontrado.</p>';
+    container.hidden = false;
+    return;
+  }
+
+  results.forEach(media => {
+    const card = document.createElement('article');
+    card.className = 'anime-result';
+    const title = animeTitle(media, activeAnimeSearchTerm);
+    const saved = isAnimeSaved(media);
+    card.innerHTML = `
+      <img src="${media.coverImage?.large || media.coverImage?.extraLarge || ''}" alt="Capa de ${title}">
+      <span class="anime-result-info">
+        <strong>${title}</strong>
+        <small>${media.title?.romaji && normalizeAnimeTitle(media.title.romaji) !== normalizeAnimeTitle(title) ? media.title.romaji + ' · ' : ''}${media.seasonYear || 'Ano desconhecido'} · ${media.episodes || (media.nextAiringEpisode?.episode ? media.nextAiringEpisode.episode - 1 : '?')} episódios disponíveis</small>
+      </span>
+      <button type="button" class="anime-result-add${saved ? ' is-saved' : ''}" ${saved ? 'disabled' : ''}>
+        ${saved ? 'Salvo na sua lista' : 'Adicionar'}
+      </button>`;
+
+    const addButton = card.querySelector('.anime-result-add');
+    addButton.onclick = () => addAnimeFromResult(media, addButton);
+    container.appendChild(card);
+  });
+  container.hidden = false;
+}
+
+async function runAnimeSearch() {
+  const value = document.getElementById('newName').value.trim();
+  const hint = document.getElementById('animeSearchHint');
+  const results = document.getElementById('animeSearchResults');
+
+  if (value.length < 2) {
+    activeAnimeSearchTerm = '';
+    results.hidden = true;
+    results.innerHTML = '';
+    hint.textContent = value.length ? 'Digite pelo menos 2 letras.' : 'Digite o nome e escolha o anime correto.';
+    return;
+  }
+
+  const requestId = ++animeSearchRequest;
+  activeAnimeSearchTerm = value;
+  hint.textContent = 'Pesquisando no AniList...';
+  results.hidden = true;
+  try {
+    const media = await searchAniList(value);
+    if (requestId !== animeSearchRequest || document.getElementById('newName').value.trim() !== value) return;
+    renderAnimeResults(media);
+    hint.textContent = 'Adicione o anime correto diretamente pelo resultado.';
+  } catch (error) {
+    if (requestId !== animeSearchRequest) return;
+    results.innerHTML = '<p class="anime-search-empty">Não foi possível consultar o AniList. Confira sua internet e tente novamente.</p>';
+    results.hidden = false;
+    hint.textContent = 'Falha na pesquisa.';
+    console.error(error);
+  }
+}
+
+async function addItem() {
+  await runAnimeSearch();
 }
 
 function formatDate(ts) {
@@ -763,32 +1358,46 @@ async function reorderItems(draggedItemId, targetItemId) {
 async function setEpisode(id, newEp) {
   const target = items.find(i => i.id === id);
   if (!target) return;
-  const max = target.totalEps || Infinity;
-  target.currentEp = Math.max(0, Math.min(newEp, max));
-  if (target.totalEps && target.currentEp >= target.totalEps) {
-    target.watched = true;
-    target.watchedAt = target.watchedAt || Date.now();
-  } else if (target.watched && target.currentEp < (target.totalEps || Infinity)) {
-    target.watched = false;
-    target.watchedAt = null;
-  }
+  const available = getAvailableEpisodes(target);
+  const parsed = Number.parseInt(newEp, 10);
+  const safeValue = Number.isFinite(parsed) ? parsed : target.currentEp || 0;
+  target.currentEp = Math.max(0, available ? Math.min(safeValue, available) : safeValue);
+
+  const status = getStatus(target);
+  if (status === 'upToDate' && available) target.caughtUpAvailableEps = available;
+  target.watched = status === 'watched';
+  if (status === 'watched') target.watchedAt = target.watchedAt || Date.now();
+  else target.watchedAt = null;
+
   render();
-  if (target.watched) flashStamp(id);
+  if (status === 'watched') flashStamp(id);
   await saveItems();
 }
 
 async function toggleWatched(id) {
   const target = items.find(i => i.id === id);
   if (!target) return;
-  target.watched = !target.watched;
-  if (target.watched) {
-    if (target.totalEps) target.currentEp = target.totalEps;
-    target.watchedAt = Date.now();
-  } else {
+  const available = getAvailableEpisodes(target);
+  const status = getStatus(target);
+
+  if (status === 'watched' || status === 'upToDate') {
+    target.currentEp = Math.max(0, (available || target.currentEp || 1) - 1);
+    target.watched = false;
     target.watchedAt = null;
+  } else if (available) {
+    target.currentEp = available;
+    target.watched = target.anilistStatus === 'FINISHED';
+    target.watchedAt = target.watched ? Date.now() : null;
+  } else {
+    showToast('Defina o episódio manualmente; o total ainda é desconhecido.');
+    return;
   }
+
+  const updatedStatus = getStatus(target);
+  if (updatedStatus === 'upToDate' && available) target.caughtUpAvailableEps = available;
+
   render();
-  if (target.watched) flashStamp(id);
+  if (updatedStatus === 'watched') flashStamp(id);
   await saveItems();
 }
 
@@ -805,17 +1414,32 @@ function flashStamp(id) {
 
 let pendingDeleteTimeout = null;
 
+let lastFocusedBeforeModal = null;
+
 function handleDeleteClick(id) {
   const target = items.find(i => i.id === id);
   if (!target) return;
   pendingDeleteId = id;
   document.getElementById('deleteText').textContent = `Deseja excluir "${target.name}" da lista?`;
-  document.getElementById('deleteModal').hidden = false;
+  const modal = document.getElementById('deleteModal');
+  lastFocusedBeforeModal = document.activeElement;
+  modal.classList.remove('is-closing');
+  modal.hidden = false;
+  requestAnimationFrame(() => document.getElementById('cancelDeleteBtn').focus());
 }
 
 function closeDeleteModal() {
   pendingDeleteId = null;
-  document.getElementById('deleteModal').hidden = true;
+  const modal = document.getElementById('deleteModal');
+  if (modal.hidden || modal.classList.contains('is-closing')) return;
+
+  modal.classList.add('is-closing');
+  setTimeout(() => {
+    modal.hidden = true;
+    modal.classList.remove('is-closing');
+    if (lastFocusedBeforeModal instanceof HTMLElement) lastFocusedBeforeModal.focus();
+    lastFocusedBeforeModal = null;
+  }, 170);
 }
 
 async function confirmDelete() {
@@ -861,7 +1485,14 @@ function chooseRandomAnime() {
 }
 
 async function removeItem(id) {
+  const row = document.querySelector(`.item[data-id="${id}"]`);
+  if (row && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    row.classList.add('item-removing');
+    await new Promise(resolve => setTimeout(resolve, 190));
+  }
+
   items = items.filter(i => i.id !== id);
+  previousVisibleAnimeIds.delete(String(id));
   render();
   await saveItems();
 }
@@ -940,7 +1571,7 @@ function exportList() {
   const headers = ['Nome', 'Status', 'Episodio atual', 'Total de episodios', 'Sugerido por', 'Nota', 'Assistido em'];
   const rows = items.map(i => [
     i.name,
-    getStatus(i) === 'watched' ? 'Assistido' : getStatus(i) === 'watching' ? 'Assistindo' : 'Para assistir',
+    getStatusLabel(i),
     i.currentEp || 0,
     i.totalEps || '',
     i.suggestedBy || '',
@@ -970,8 +1601,32 @@ document.getElementById('searchBox').addEventListener('input', e => {
 });
 
 document.getElementById('addBtn').onclick = addItem;
+document.getElementById('newName').addEventListener('input', () => {
+  clearAnimeSelection();
+  clearTimeout(animeSearchTimer);
+  animeSearchRequest++;
+
+  const input = document.getElementById('newName');
+  const results = document.getElementById('animeSearchResults');
+  const hint = document.getElementById('animeSearchHint');
+  const value = input.value.trim();
+
+  if (value.length < 2) {
+    activeAnimeSearchTerm = '';
+    results.hidden = true;
+    results.innerHTML = '';
+    hint.textContent = value.length ? 'Digite pelo menos 2 letras.' : 'Digite o nome e escolha o anime correto.';
+    return;
+  }
+
+  hint.textContent = 'Aguardando você terminar de digitar...';
+  animeSearchTimer = setTimeout(runAnimeSearch, 450);
+});
 document.getElementById('newName').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addItem();
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addItem();
+  }
 });
 document.getElementById('newTotal').addEventListener('keydown', e => {
   if (e.key === 'Enter') addItem();
@@ -1039,3 +1694,10 @@ rotateHeroQuote();
 loadTheme();
 loadMyName();
 loadItems();
+
+// Mantém a contagem regressiva atualizada enquanto o aplicativo estiver aberto.
+setInterval(() => {
+  if (items.some(item => getStatus(item) === 'upToDate' && item.anilistStatus === 'RELEASING')) {
+    render();
+  }
+}, 60000);

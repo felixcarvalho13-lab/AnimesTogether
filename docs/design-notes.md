@@ -252,3 +252,13 @@
 
 **- Select**
 
+
+## Sprint 6.4.2.2 — Microinterações finais
+
+- Entrada suave e escalonada para cards que aparecem na biblioteca.
+- Animação de saída ao excluir um anime.
+- Feedback tátil visual em botões, filtros, controles de episódio e checkbox.
+- Destaque animado ao favoritar e concluir.
+- Abertura e fechamento suaves do modal de exclusão.
+- Retorno de foco ao elemento anterior após fechar o modal.
+- Respeito à preferência de acessibilidade `prefers-reduced-motion`.

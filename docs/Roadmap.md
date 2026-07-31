@@ -46,3 +46,10 @@
 
 
 
+
+## Sprint 6.2 — Dados completos do AniList
+- Salvar `anilistId` e títulos disponíveis.
+- Salvar pôster, banner e cor predominante.
+- Salvar sinopse, gêneros, nota, estúdios, ano, temporada e status de lançamento.
+- Salvar trailer com provedor, miniatura e URL pronta para uso.
+- Preservar separadamente os dados pessoais do AnimesTogether.
