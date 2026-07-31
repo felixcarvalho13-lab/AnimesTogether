@@ -439,8 +439,18 @@ function renderStats() {
   const watchingCount = items.filter(i => getStatus(i) === 'watching').length;
   const pendingCount = items.filter(i => getStatus(i) === 'pending').length;
   const favoriteCount = items.filter(i => i.favorite).length;
-  const episodesWatched = items.reduce((sum, i) => sum + (i.currentEp || 0), 0);
-  const estimatedHours = Math.round((episodesWatched * 24) / 60);
+  const episodesWatched = items.reduce((sum, i) => sum + Math.max(0, Number(i.currentEp) || 0), 0);
+  const totalEpisodes = items.reduce((sum, i) => {
+    const available = getAvailableEpisodes(i);
+    return sum + Math.max(available || Number(i.currentEp) || 0, 0);
+  }, 0);
+  const estimatedHours = Math.round((totalEpisodes * 24) / 60);
+  const continuousDays = Math.floor(estimatedHours / 24);
+  const continuousHours = estimatedHours % 24;
+  const daysAtTwoHours = Math.ceil(estimatedHours / 2);
+  const watchedProgress = totalEpisodes
+    ? Math.min(100, Math.round((episodesWatched / totalEpisodes) * 100))
+    : 0;
 
   const stats = [
     { num: items.length, label: 'Na lista' },
@@ -449,7 +459,6 @@ function renderStats() {
     { num: watchingCount, label: 'Assistindo' },
     { num: pendingCount, label: 'Na fila' },
     { num: favoriteCount, label: 'Favoritos' },
-    { num: estimatedHours + 'h', label: 'Tempo estimado' },
   ];
 
   stats.forEach(s => {
@@ -465,6 +474,35 @@ function renderStats() {
     card.appendChild(label);
     bar.appendChild(card);
   });
+
+  const timeCard = document.createElement('div');
+  timeCard.className = 'stat-card stat-time-card';
+
+  const timePrimary = document.createElement('div');
+  timePrimary.className = 'stat-time-primary';
+  timePrimary.innerHTML = `<div class="stat-num">${estimatedHours}h</div><div class="stat-label">Tempo estimado da lista</div>`;
+
+  const marathon = document.createElement('div');
+  marathon.className = 'stat-time-detail';
+  const marathonText = continuousDays > 0
+    ? `${continuousDays}d ${continuousHours}h`
+    : `${continuousHours}h`;
+  marathon.innerHTML = `<strong>${marathonText}</strong><span>de maratona ininterrupta</span>`;
+
+  const routine = document.createElement('div');
+  routine.className = 'stat-time-detail';
+  routine.innerHTML = `<strong>${daysAtTwoHours} dias</strong><span>assistindo 2h por dia</span>`;
+
+  const progressWrap = document.createElement('div');
+  progressWrap.className = 'stat-time-progress';
+  progressWrap.setAttribute('aria-label', `${watchedProgress}% da lista assistida`);
+  progressWrap.innerHTML = `<span style="width:${watchedProgress}%"></span>`;
+
+  timeCard.appendChild(timePrimary);
+  timeCard.appendChild(marathon);
+  timeCard.appendChild(routine);
+  timeCard.appendChild(progressWrap);
+  bar.appendChild(timeCard);
 }
 
 function renderContinueCard() {
@@ -606,7 +644,8 @@ function focusAnimeCard(id) {
 
   filter = 'all';
   searchTerm = '';
-  document.getElementById('searchBox').value = '';
+  const librarySearch = document.getElementById('searchBox');
+  if (librarySearch) librarySearch.value = '';
   document.querySelectorAll('.filters button').forEach(b => {
     b.classList.toggle('active', b.dataset.filter === 'all');
   });
@@ -1590,10 +1629,13 @@ document.getElementById('exportBtn').onclick = exportList;
 
 document.getElementById('shareBtn').onclick = copyShareLink;
 
-document.getElementById('searchBox').addEventListener('input', e => {
-  searchTerm = e.target.value.trim();
-  render();
-});
+const librarySearch = document.getElementById('searchBox');
+if (librarySearch) {
+  librarySearch.addEventListener('input', e => {
+    searchTerm = e.target.value.trim();
+    render();
+  });
+}
 
 document.getElementById('newName').addEventListener('input', () => {
   clearAnimeSelection();

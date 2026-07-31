@@ -2229,3 +2229,239 @@ body {
 .anime-search-results[hidden] {
   display: none;
 }
+
+/* ==========================================
+   Sprint 6.4.2.4 — Biblioteca mais compacta
+   ========================================== */
+.list-title {
+  margin: 8px 0 8px;
+}
+
+.list-title h2 {
+  font-size: clamp(21px, 2.2vw, 26px);
+}
+
+.name-section {
+  margin-bottom: 10px;
+}
+
+.profile-picker {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.anime-search-box {
+  margin-bottom: 8px;
+}
+
+.anime-search-hint {
+  margin-bottom: 8px;
+}
+
+.tools-grid {
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: stretch;
+  gap: 8px;
+  margin: 10px 0 12px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+}
+
+.tools-grid .sort-select,
+.tools-grid .share-btn {
+  min-height: 42px;
+}
+
+.tools-grid .sort-select {
+  width: 100%;
+  max-width: none;
+}
+
+.stats-bar {
+  margin-bottom: 10px;
+}
+
+.filters {
+  margin-bottom: 10px;
+}
+
+.hint {
+  margin: -2px 2px 12px;
+}
+
+#list {
+  scroll-margin-top: 90px;
+}
+
+.item {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 700px) {
+  .shared-identity {
+    margin-bottom: 4px;
+  }
+
+  .list-title {
+    margin-top: 6px;
+  }
+
+  .section-heading h2 {
+    margin-top: 1px;
+  }
+
+  .name-section,
+  .profile-picker {
+    margin-bottom: 8px;
+  }
+
+  .anime-search-hint {
+    margin-bottom: 7px;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 8px;
+    padding: 7px;
+  }
+
+  .tools-grid .sort-select {
+    grid-column: 1 / -1;
+  }
+
+  .tools-grid .share-btn {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .stats-bar {
+    gap: 7px;
+  }
+
+  .stat-card {
+    padding: 10px 8px;
+  }
+
+  .filters {
+    margin-left: -2px;
+    margin-right: -2px;
+    padding-bottom: 2px;
+  }
+
+  .filters button {
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+
+  .hint {
+    margin-bottom: 10px;
+  }
+}
+
+/* ==========================================
+   Sprint 6.4.2.5 — Ajustes finos de acabamento
+   ========================================== */
+.anime-search-hint {
+  margin-top: 7px;
+  margin-bottom: 10px;
+}
+
+.tools-grid .sort-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-left: 12px;
+  padding-right: 42px;
+  background-color: var(--surface-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 15px;
+}
+
+.stats-bar .stat-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.brand-lockup h1 {
+  line-height: 1.18;
+  padding-bottom: 2px;
+}
+
+/* ==========================================
+   Sprint 6.4.2.6 — Ritmo de maratona
+   ========================================== */
+.stats-bar .stat-time-card {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(190px, 1fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 14px 24px;
+  padding: 14px 16px 12px;
+}
+
+.stat-time-primary,
+.stat-time-detail {
+  min-width: 0;
+}
+
+.stat-time-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.stat-time-detail strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.stat-time-detail span {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.stat-time-progress {
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 84%, #000 16%);
+}
+
+.stat-time-progress > span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  transition: width .35s ease;
+}
+
+@media (max-width: 700px) {
+  .stats-bar .stat-time-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 14px;
+    padding: 13px 12px 11px;
+  }
+
+  .stat-time-primary {
+    grid-column: 1 / -1;
+  }
+
+  .stat-time-detail {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .stat-time-detail + .stat-time-detail {
+    padding-left: 14px;
+    border-left: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  }
+}
