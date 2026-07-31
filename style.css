@@ -2391,15 +2391,27 @@ body {
 }
 
 /* ==========================================
-   Sprint 6.4.2.6 — Ritmo de maratona
+   Sprint 6.4.2.9 — Card de tempo final
    ========================================== */
 .stats-bar .stat-time-card {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(150px, 1.1fr) minmax(190px, 1fr) minmax(180px, 1fr);
-  align-items: center;
-  gap: 14px 24px;
-  padding: 14px 16px 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    "primary primary primary"
+    "progress progress progress"
+    "routine marathon watched";
+  gap: 12px 0;
+  padding: 15px 16px 14px;
+}
+
+.stat-time-primary {
+  grid-area: primary;
+}
+
+.stat-time-primary .stat-num {
+  font-size: 19px;
+  line-height: 1.05;
 }
 
 .stat-time-primary,
@@ -2410,9 +2422,24 @@ body {
 .stat-time-detail {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-left: 18px;
-  border-left: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 2px 18px 0;
+}
+
+.stat-time-detail:first-of-type {
+  grid-area: marathon;
+  border-left: 1px solid rgba(124, 77, 255, .22);
+}
+
+.stat-time-detail:nth-of-type(2) {
+  grid-area: routine;
+}
+
+.stat-time-watched {
+  grid-area: watched;
+  border-left: 1px solid rgba(124, 77, 255, .22);
 }
 
 .stat-time-detail strong {
@@ -2428,40 +2455,77 @@ body {
 }
 
 .stat-time-progress {
-  grid-column: 1 / -1;
-  height: 4px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-2) 84%, #000 16%);
+  grid-area: progress;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
 }
 
-.stat-time-progress > span {
+.stat-time-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #12101a;
+  border: 1px solid rgba(124, 77, 255, .22);
+}
+
+.stat-time-progress-track > span {
   display: block;
   height: 100%;
-  min-width: 4px;
+  min-width: 3px;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  background: linear-gradient(90deg, #7c4dff, #b58cff);
+  box-shadow: 0 0 12px rgba(124, 77, 255, .45);
   transition: width .35s ease;
+}
+
+.stat-time-progress > strong {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 @media (max-width: 700px) {
   .stats-bar .stat-time-card {
     grid-template-columns: 1fr 1fr;
-    gap: 12px 14px;
-    padding: 13px 12px 11px;
-  }
-
-  .stat-time-primary {
-    grid-column: 1 / -1;
+    grid-template-areas:
+      "primary primary"
+      "progress progress"
+      "routine marathon"
+      "watched watched";
+    gap: 12px 0;
+    padding: 14px 13px 13px;
   }
 
   .stat-time-detail {
-    padding-left: 0;
-    border-left: 0;
+    align-items: flex-start;
+    text-align: left;
+    padding: 1px 12px 0 0;
   }
 
-  .stat-time-detail + .stat-time-detail {
-    padding-left: 14px;
-    border-left: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  .stat-time-detail:first-of-type {
+    padding: 1px 0 0 14px;
+    border-left: 1px solid rgba(124, 77, 255, .22);
+  }
+
+  .stat-time-detail:nth-of-type(2) {
+    padding-left: 0;
+  }
+
+  .stat-time-watched {
+    margin-top: 2px;
+    padding: 11px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(124, 77, 255, .22);
+  }
+
+  .stat-time-progress {
+    gap: 8px;
+  }
+
+  .stat-time-progress > strong {
+    font-size: 10px;
   }
 }
+

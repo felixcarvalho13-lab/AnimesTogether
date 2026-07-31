@@ -445,6 +445,7 @@ function renderStats() {
     return sum + Math.max(available || Number(i.currentEp) || 0, 0);
   }, 0);
   const estimatedHours = Math.round((totalEpisodes * 24) / 60);
+  const watchedHours = Math.round((episodesWatched * 24) / 60);
   const continuousDays = Math.floor(estimatedHours / 24);
   const continuousHours = estimatedHours % 24;
   const daysAtTwoHours = Math.ceil(estimatedHours / 2);
@@ -487,20 +488,25 @@ function renderStats() {
   const marathonText = continuousDays > 0
     ? `${continuousDays}d ${continuousHours}h`
     : `${continuousHours}h`;
-  marathon.innerHTML = `<strong>${marathonText}</strong><span>de maratona ininterrupta</span>`;
+  marathon.innerHTML = `<strong>${marathonText}</strong><span>Maratona ininterrupta</span>`;
 
   const routine = document.createElement('div');
   routine.className = 'stat-time-detail';
-  routine.innerHTML = `<strong>${daysAtTwoHours} dias</strong><span>assistindo 2h por dia</span>`;
+  routine.innerHTML = `<strong>${daysAtTwoHours} dias</strong><span>Assistindo 2h por dia</span>`;
+
+  const watchedTime = document.createElement('div');
+  watchedTime.className = 'stat-time-detail stat-time-watched';
+  watchedTime.innerHTML = `<strong>${watchedHours}h (${watchedProgress}%)</strong><span>Assistidas</span>`;
 
   const progressWrap = document.createElement('div');
   progressWrap.className = 'stat-time-progress';
   progressWrap.setAttribute('aria-label', `${watchedProgress}% da lista assistida`);
-  progressWrap.innerHTML = `<span style="width:${watchedProgress}%"></span>`;
+  progressWrap.innerHTML = `<div class="stat-time-progress-track"><span style="width:${watchedProgress}%"></span></div><strong>${watchedProgress}% concluído</strong>`;
 
   timeCard.appendChild(timePrimary);
   timeCard.appendChild(marathon);
   timeCard.appendChild(routine);
+  timeCard.appendChild(watchedTime);
   timeCard.appendChild(progressWrap);
   bar.appendChild(timeCard);
 }
